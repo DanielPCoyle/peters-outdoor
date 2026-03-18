@@ -17,6 +17,8 @@ import ReviewStatsSection from "@/components/sections/ReviewStatsSection";
 import ReviewsGridSection from "@/components/sections/ReviewsGridSection";
 import GalleryGridSection from "@/components/sections/GalleryGridSection";
 import BookingOptionsSection from "@/components/sections/BookingOptionsSection";
+import BookingFormBlock from "@/components/sections/BookingFormBlock";
+import GroupBookingSection from "@/components/sections/GroupBookingSection";
 
 export const builderComponents: RegisteredComponent[] = [
   {
@@ -117,6 +119,12 @@ export const builderComponents: RegisteredComponent[] = [
       },
       { name: "description", type: "longText" },
       {
+        name: "useDbTours",
+        type: "boolean",
+        defaultValue: false,
+        helperText: "When enabled, pulls tours live from the database instead of the list below.",
+      },
+      {
         name: "tours",
         type: "list",
         subFields: [
@@ -215,8 +223,13 @@ export const builderComponents: RegisteredComponent[] = [
     component: TourDetailSection,
     name: "TourDetailSection",
     inputs: [
+      {
+        name: "tourId",
+        type: "string",
+        helperText: "Paste a Tour ID from /admin/tours. The component will display live data from the database for that tour and show a tour picker in the editor when left empty.",
+      },
       { name: "id", type: "string" },
-      { name: "title", type: "string", required: true },
+      { name: "title", type: "string" },
       { name: "tagline", type: "string" },
       { name: "description", type: "longText", required: true },
       {
@@ -386,6 +399,66 @@ export const builderComponents: RegisteredComponent[] = [
         ],
       },
       { name: "customToursNote", type: "longText" },
+    ],
+  },
+
+  {
+    component: BookingFormBlock,
+    name: "BookingFormBlock",
+    inputs: [
+      { name: "sectionTitle", type: "string", defaultValue: "Reserve Your Spot" },
+      { name: "sectionSubtitle", type: "string", defaultValue: "Select your tour, pick a date, and secure your booking in minutes." },
+      { name: "showGroupSidebar", type: "boolean", defaultValue: true },
+      { name: "sidebarEyebrow", type: "string", defaultValue: "Groups & Corporate" },
+      { name: "sidebarTitle", type: "string", defaultValue: "Planning a Group Adventure?" },
+      {
+        name: "sidebarDescription",
+        type: "longText",
+        defaultValue: "Corporate outings, family reunions, birthday paddles, or team-building retreats — we'll customize every detail. Private tours and group pricing for parties of 9+.",
+      },
+      {
+        name: "sidebarPerks",
+        type: "list",
+        subFields: [{ name: "label", type: "string" }],
+        defaultValue: [
+          { label: "Private guided tour — just your group" },
+          { label: "Flexible route, date, and start time" },
+          { label: "Perfect for corporate team building" },
+          { label: "Celebrations, reunions, bachelorette parties" },
+        ],
+      },
+      { name: "sidebarEmailLabel", type: "string", defaultValue: "Email Us for Group Pricing" },
+      { name: "sidebarEmail", type: "string", defaultValue: "info@petersoutdoor.com" },
+      { name: "sidebarPhoneLabel", type: "string", defaultValue: "Call 410-357-1025" },
+      { name: "sidebarPhone", type: "string", defaultValue: "410-357-1025" },
+    ],
+  },
+
+  {
+    component: GroupBookingSection,
+    name: "GroupBookingSection",
+    inputs: [
+      { name: "eyebrow", type: "string", defaultValue: "Groups & Corporate" },
+      { name: "title", type: "string", defaultValue: "Planning a Group Adventure?" },
+      {
+        name: "description",
+        type: "longText",
+        defaultValue: "Whether it's a corporate outing, family reunion, birthday paddle, or team-building retreat — we'll customize every detail for your group. Private tours, flexible scheduling, and group pricing available for parties of 9 or more.",
+      },
+      {
+        name: "perks",
+        type: "list",
+        subFields: [{ name: "label", type: "string" }],
+        defaultValue: [
+          { label: "Private guided tour — just your group" },
+          { label: "Flexible route, date, and start time" },
+          { label: "Perfect for corporate team building" },
+          { label: "Celebrations, reunions, bachelorette parties" },
+        ],
+      },
+      { name: "emailLabel", type: "string", defaultValue: "Email Us for Group Pricing" },
+      { name: "email", type: "string", defaultValue: "info@petersoutdoor.com" },
+      { name: "phone", type: "string", defaultValue: "410-357-1025" },
     ],
   },
 ];

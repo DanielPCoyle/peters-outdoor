@@ -1,0 +1,133 @@
+"use client";
+
+import { useState } from "react";
+
+interface BookingCalendarProps {
+  selected: Date | null;
+  onSelect: (date: Date) => void;
+}
+
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+export default function BookingCalendar({ selected, onSelect }: BookingCalendarProps) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const [viewDate, setViewDate] = useState(() => {
+    const d = new Date();
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
+
+  const isToday = (day: number) => {
+    const d = new Date(year, month, day);
+    return d.getTime() === today.getTime();
+  };
+
+  const isPast = (day: number) => {
+    const d = new Date(year, month, day);
+    return d < today;
+  };
+
+  const isSelected = (day: number) => {
+    if (!selected) return false;
+    return (
+      selected.getFullYear() === year &&
+      selected.getMonth() === month &&
+      selected.getDate() === day
+    );
+  };
+
+  const canGoPrev = () => {
+    const prevMonthDate = new Date(year, month - 1, 1);
+    const todayFirst = new Date(today.getFullYear(), today.getMonth(), 1);
+    return prevMonthDate >= todayFirst;
+  };
+
+  const cells: (number | null)[] = [
+    ...Array(firstDay).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+
+  // Pad to complete last row
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  return (
+    <div className="bg-white rounded-2xl border border-sage-muted/20 p-5">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={prevMonth}
+          disabled={!canGoPrev()}
+          className="p-1.5 rounded-full hover:bg-sage-muted/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          aria-label="Previous month"
+        >
+          <svg className="w-5 h-5 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <span className="font-semibold text-forest text-base">
+          {MONTHS[month]} {year}
+        </span>
+        <button
+          onClick={nextMonth}
+          className="p-1.5 rounded-full hover:bg-sage-muted/20 transition-colors"
+          aria-label="Next month"
+        >
+          <svg className="w-5 h-5 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Day labels */}
+      <div className="grid grid-cols-7 mb-1">
+        {DAYS.map((d) => (
+          <div key={d} className="text-center text-xs font-medium text-warm-gray py-1">
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Day cells */}
+      <div className="grid grid-cols-7 gap-0.5">
+        {cells.map((day, i) => {
+          if (!day) return <div key={`empty-${i}`} />;
+          const past = isPast(day);
+          const sel = isSelected(day);
+          const tod = isToday(day);
+          return (
+            <button
+              key={day}
+              onClick={() => !past && onSelect(new Date(year, month, day))}
+              disabled={past}
+              className={`
+                aspect-square flex items-center justify-center text-sm rounded-full transition-all font-medium
+                ${past ? "text-warm-gray/40 cursor-not-allowed" : "cursor-pointer"}
+                ${sel ? "bg-forest text-white" : ""}
+                ${!sel && !past ? "hover:bg-forest/10 text-forest" : ""}
+                ${tod && !sel ? "ring-1 ring-forest" : ""}
+              `}
+            >
+              {day}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import TourCard from "@/components/TourCard";
+import { useEffect, useState } from "react";
+import type { Tour } from "@/lib/tourStore";
 
 interface TourItem {
   title: string;
@@ -16,6 +20,7 @@ interface FeaturedToursSectionProps {
   title?: string;
   description?: string;
   tours?: TourItem[];
+  useDbTours?: boolean;
   ctaText?: string;
   ctaHref?: string;
 }
@@ -50,14 +55,38 @@ const defaultTours: TourItem[] = [
   },
 ];
 
+function dbTourToItem(t: Tour): TourItem {
+  return {
+    title: t.name,
+    subtitle: t.tagline,
+    description: t.description,
+    image: t.imageUrl,
+    href: `/booking`,
+    duration: t.duration,
+  };
+}
+
 export default function FeaturedToursSection({
   eyebrow = "Our Tours",
   title = "Discover Maryland's Hidden Waterways",
   description = "Each tour is a unique journey through diverse ecosystems, rich history, and stunning natural beauty.",
-  tours = defaultTours,
+  tours: toursProp = defaultTours,
+  useDbTours = false,
   ctaText = "View All Tours",
   ctaHref = "/tours",
 }: FeaturedToursSectionProps) {
+  const [dbTours, setDbTours] = useState<TourItem[] | null>(null);
+
+  useEffect(() => {
+    if (!useDbTours) return;
+    fetch("/api/tours")
+      .then((r) => r.json())
+      .then((data: { tours: Tour[] }) => setDbTours(data.tours.map(dbTourToItem)))
+      .catch(console.error);
+  }, [useDbTours]);
+
+  const tours = useDbTours ? (dbTours ?? []) : toursProp;
+
   return (
     <section className="py-24 bg-cream">
       <div className="max-w-7xl mx-auto px-6">

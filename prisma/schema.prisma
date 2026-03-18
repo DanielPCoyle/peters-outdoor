@@ -1,0 +1,67 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Tour {
+  id          String      @id @default(uuid())
+  name        String
+  tagline     String
+  description String
+  price       Decimal     @db.Decimal(10, 2)
+  duration    String      @default("2–3 hours")
+  imageUrl    String
+  wildlife    String[]
+  isActive    Boolean     @default(true)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  addOns      TourAddOn[]
+
+  @@map("tours")
+}
+
+model AddOn {
+  id          String      @id @default(uuid())
+  name        String
+  description String      @default("")
+  price       Decimal     @db.Decimal(10, 2)
+  isActive    Boolean     @default(true)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  tours       TourAddOn[]
+
+  @@map("add_ons")
+}
+
+model TourAddOn {
+  tourId  String
+  addOnId String
+  tour    Tour   @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  addOn   AddOn  @relation(fields: [addOnId], references: [id], onDelete: Cascade)
+
+  @@id([tourId, addOnId])
+  @@map("tour_add_ons")
+}
+
+model GiftCertificate {
+  id                    String    @id @default(uuid())
+  createdAt             DateTime  @default(now()) @map("created_at")
+  status                String    @default("pending_payment")
+  yourName              String    @map("your_name")
+  yourEmail             String    @map("your_email")
+  recipientName         String?   @map("recipient_name")
+  message               String?
+  amount                Decimal   @db.Decimal(10, 2)
+  certificateCode       String?   @map("certificate_code")
+  stripePaymentIntentId String?   @map("stripe_payment_intent_id")
+  sentAt                DateTime? @map("sent_at")
+  redeemedAt            DateTime? @map("redeemed_at")
+
+  @@map("gift_certificates")
+}

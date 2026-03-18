@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import SiteChrome from "@/components/SiteChrome";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -43,9 +42,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${outfit.variable} ${playfair.variable} antialiased`}>
-        <Header />
-        <main>{children}</main>
-        <Footer />
+        <SiteChrome>
+          <main>{children}</main>
+        </SiteChrome>
       </body>
     </html>
   );

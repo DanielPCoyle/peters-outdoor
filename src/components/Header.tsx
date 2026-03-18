@@ -11,6 +11,7 @@ const navLinks = [
   { href: "/tours", label: "Tours" },
   { href: "/reviews", label: "Reviews" },
   { href: "/gallery", label: "Gallery" },
+  { href: "/gift-certificates", label: "Gift Certificates" },
 ];
 
 export default function Header() {

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
+import NewsletterSignup from "@/components/NewsletterSignup";
 
 export default function Footer() {
   return (
@@ -27,24 +29,13 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-sage flex items-center justify-center">
-                <svg
-                  viewBox="0 0 40 40"
-                  className="w-6 h-6 text-cream"
-                  fill="currentColor"
-                >
-                  <path d="M20 4 L12 18 L16 18 L10 30 L15 30 L8 38 L32 38 L25 30 L30 30 L24 18 L28 18 Z" />
-                </svg>
-              </div>
-              <div>
-                <span className="font-serif text-lg font-bold">
-                  W.H. Peters
-                </span>
-                <span className="block text-xs tracking-widest uppercase text-sage-light">
-                  Outdoor Adventures
-                </span>
-              </div>
+            <div className="mb-4">
+              <Image
+                src="/Logo.jpeg"
+                alt="W.H. Peters Outdoor Adventures"
+                width={100}
+                height={100}
+              />
             </div>
             <p className="text-sage-light text-sm leading-relaxed">
               Guided kayak eco-tours in Ocean City, MD led by an experienced
@@ -64,6 +55,7 @@ export default function Footer() {
                 { href: "/reviews", label: "Reviews" },
                 { href: "/gallery", label: "Gallery" },
                 { href: "/booking", label: "Book a Tour" },
+                { href: "/gift-certificates", label: "Gift Certificates" },
               ].map((link) => (
                 <li key={link.href}>
                   <Link
@@ -136,8 +128,13 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* Newsletter */}
+        <div className="border-t border-sage/20 mt-10 pt-10">
+          <NewsletterSignup />
+        </div>
+
         {/* Bottom */}
-        <div className="border-t border-sage/20 mt-10 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-sage">
+        <div className="border-t border-sage/20 mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-sage">
           <p>&copy; {new Date().getFullYear()} W.H. Peters Outdoor Adventures. All rights reserved.</p>
           <div className="flex gap-4">
             <Link href="/privacy" className="hover:text-cream transition-colors">Privacy Policy</Link>

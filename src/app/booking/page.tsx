@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { fetchOneEntry, getBuilderSearchParams } from "@builder.io/sdk-react";
 import BuilderContentWrapper from "@/components/BuilderContent";
 import PageHero from "@/components/sections/PageHero";
-import BookingOptionsSection from "@/components/sections/BookingOptionsSection";
-import BookingContactSidebar from "@/components/sections/BookingContactSidebar";
+import BookingFormBlock from "@/components/sections/BookingFormBlock";
 
 export const dynamic = "force-dynamic";
 
@@ -49,16 +48,7 @@ export default async function BookingPage({
         />
       </div>
 
-      <section className="py-24 bg-cream">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            <BookingOptionsSection />
-            <div>
-              <BookingContactSidebar />
-            </div>
-          </div>
-        </div>
-      </section>
+      <BookingFormBlock />
     </>
   );
 }
