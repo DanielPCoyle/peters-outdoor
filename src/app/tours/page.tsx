@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
+import { fetchOneEntry, getBuilderSearchParams } from "@builder.io/sdk-react";
+import BuilderContentWrapper from "@/components/BuilderContent";
+import PageHero from "@/components/sections/PageHero";
+import TourDetailSection from "@/components/sections/TourDetailSection";
+import SpecialToursSection, { toursPageCards } from "@/components/sections/SpecialToursSection";
+import ToursIntroSection from "@/components/sections/ToursIntroSection";
+import ToursImportantInfoSection from "@/components/sections/ToursImportantInfoSection";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Tours",
@@ -8,12 +15,13 @@ export const metadata: Metadata = {
     "Explore our guided kayak eco-tours: Pocomoke River, Newport Bay, St. Martin River, Assateague Island, plus sunset and full moon tours.",
 };
 
+const BUILDER_API_KEY = process.env.BUILDERIO_PUBLIC_API_KEY ?? "";
+
 const tours = [
   {
     id: "newport",
     title: "Newport Bay Salt Marsh",
-    tagline:
-      "Kayak Maryland's hidden gem: Newport Bay's wild salt marsh.",
+    tagline: "Kayak Maryland's hidden gem: Newport Bay's wild salt marsh.",
     description:
       "Paddle through the largest continuous salt marsh in Worcester County, Maryland on a peaceful 2-3 hour guided tour. You'll glide along tidal creeks and open waters, spotting osprey, herons, and other wildlife while learning the stories of Maryland's \"forgotten bays.\" Small groups, calm waters, and optional sunset departures make this experience perfect for all skill levels — whether you're seeking adventure, relaxation, or stunning photos.",
     image:
@@ -58,220 +66,70 @@ const tours = [
   },
 ];
 
-export default function ToursPage() {
+export default async function ToursPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string>>;
+}) {
+  const params = await searchParams;
+  const content = BUILDER_API_KEY
+    ? await fetchOneEntry({
+        model: "page",
+        apiKey: BUILDER_API_KEY,
+        cacheSeconds: 1,
+        staleCacheSeconds: 1,
+        fetchOptions: { cache: "no-store" },
+        options: { noCache: "true", cachebust: "true", ...getBuilderSearchParams(params) },
+        query: { "data.url": "/tours" },
+        userAttributes: { urlPath: "/tours" },
+      })
+    : null;
+
+  if (content) {
+    return <BuilderContentWrapper content={content} apiKey={BUILDER_API_KEY} />;
+  }
+
   return (
     <>
-      {/* Hero */}
-      <section className="relative h-[50vh] min-h-[400px] flex items-center justify-center">
-        <Image
-          src="https://static.wixstatic.com/media/5768ba_228ce943b71e4538a11a9ab52ddaf6ad~mv2.jpg/v1/fill/w_1920,h_800,al_c,q_85,enc_avif,quality_auto/5768ba_228ce943b71e4538a11a9ab52ddaf6ad~mv2.jpg"
-          alt="Kayaking at sunset"
-          fill
-          priority
-          className="object-cover"
+      <div style={{ height: "50vh", minHeight: "400px" }}>
+        <PageHero
+          eyebrow="Guided Eco-Tours"
+          title="Explore Nature's Wonders"
+          imageUrl="https://static.wixstatic.com/media/5768ba_228ce943b71e4538a11a9ab52ddaf6ad~mv2.jpg/v1/fill/w_1920,h_800,al_c,q_85,enc_avif,quality_auto/5768ba_228ce943b71e4538a11a9ab52ddaf6ad~mv2.jpg"
+          imageAlt="Kayaking at sunset"
         />
-        <div className="absolute inset-0 bg-forest/60" />
-        <div className="relative z-10 text-center text-white px-6">
-          <p className="text-sage-light text-sm font-medium tracking-[0.3em] uppercase mb-4">
-            Guided Eco-Tours
-          </p>
-          <h1 className="font-serif text-5xl md:text-7xl font-bold">
-            Explore Nature&apos;s Wonders
-          </h1>
-        </div>
-      </section>
+      </div>
 
-      {/* Intro */}
-      <section className="py-16 bg-cream">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-lg text-warm-gray leading-relaxed mb-6">
-            Join me for exhilarating kayak eco-tours led by an experienced,
-            local naturalist and ACA certified coastal kayak instructor.
-            Experience diverse ecosystems, learn about local wildlife and rich
-            cultural history, all while enjoying the beauty of nature paddling
-            through serene waters.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4 text-sm">
-            <span className="px-4 py-2 bg-sage-muted/30 text-forest rounded-full">
-              All skill levels welcome
-            </span>
-            <span className="px-4 py-2 bg-sage-muted/30 text-forest rounded-full">
-              Max 6 kayaks / 8 people
-            </span>
-            <span className="px-4 py-2 bg-sage-muted/30 text-forest rounded-full">
-              Customizable dates & times
-            </span>
-            <span className="px-4 py-2 bg-sage-muted/30 text-forest rounded-full">
-              Equipment provided
-            </span>
-          </div>
-        </div>
-      </section>
+      <ToursIntroSection />
 
-      {/* Tours */}
+      {/* Tour Details */}
       <section className="py-24 bg-cream-dark">
         <div className="max-w-7xl mx-auto px-6 space-y-24">
           {tours.map((tour, i) => (
-            <div
+            <TourDetailSection
               key={tour.id}
               id={tour.id}
-              className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${
-                i % 2 === 1 ? "lg:direction-rtl" : ""
-              }`}
-            >
-              <div className={`${i % 2 === 1 ? "lg:order-2" : ""}`}>
-                <div className="relative rounded-2xl overflow-hidden shadow-xl group">
-                  <Image
-                    src={tour.image}
-                    alt={tour.title}
-                    width={900}
-                    height={600}
-                    className="w-full group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute top-4 right-4 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-xs font-medium text-forest">
-                    {tour.duration}
-                  </div>
-                </div>
-              </div>
-
-              <div className={`${i % 2 === 1 ? "lg:order-1" : ""}`}>
-                <h2 className="font-serif text-3xl md:text-4xl font-bold text-forest mb-3">
-                  {tour.title}
-                </h2>
-                <p className="text-sage font-medium text-lg mb-4 italic">
-                  {tour.tagline}
-                </p>
-                <p className="text-warm-gray leading-relaxed mb-6">
-                  {tour.description}
-                </p>
-
-                {/* Wildlife tags */}
-                <div className="mb-6">
-                  <p className="text-sm font-semibold text-forest mb-2">
-                    Wildlife you may see:
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {tour.wildlife.map((animal) => (
-                      <span
-                        key={animal}
-                        className="px-3 py-1 bg-sage-muted/30 text-forest text-sm rounded-full"
-                      >
-                        {animal}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <Link
-                  href="/booking"
-                  className="inline-block px-8 py-3 bg-gold text-forest font-semibold rounded-full hover:bg-gold-light transition-colors"
-                >
-                  Book This Tour
-                </Link>
-              </div>
-            </div>
+              title={tour.title}
+              tagline={tour.tagline}
+              description={tour.description}
+              wildlife={tour.wildlife}
+              duration={tour.duration}
+              imageUrl={tour.image}
+              imageAlt={tour.title}
+              reversed={i % 2 === 1}
+            />
           ))}
         </div>
       </section>
 
-      {/* Special Tours */}
-      <section className="py-24 bg-forest text-cream">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <p className="text-sage-light text-sm font-medium tracking-[0.3em] uppercase mb-3">
-              Special Experiences
-            </p>
-            <h2 className="font-serif text-4xl md:text-5xl font-bold">
-              Sunset & Full Moon Tours
-            </h2>
-          </div>
+      <SpecialToursSection
+        eyebrow="Special Experiences"
+        sectionTitle="Sunset & Full Moon Tours"
+        cards={toursPageCards}
+        cardHeight="h-80"
+      />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="relative rounded-2xl overflow-hidden group h-80">
-              <Image
-                src="https://static.wixstatic.com/media/5768ba_388163a383e849019d7b74abfa4e0da0~mv2.jpg/v1/fill/w_900,h_600,al_c,q_85,enc_avif,quality_auto/PXL_20250823_233340318_MP.jpg"
-                alt="Sunset kayaking"
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-8">
-                <span className="inline-block px-3 py-1 bg-gold/90 text-forest text-xs font-semibold rounded-full mb-3">
-                  Runs Daily
-                </span>
-                <h3 className="font-serif text-2xl font-bold mb-2">
-                  Sunset Kayak Tour
-                </h3>
-                <p className="text-white/80 text-sm">
-                  Watch the sky transform as you paddle through golden-hour waters.
-                </p>
-              </div>
-            </div>
-
-            <div className="relative rounded-2xl overflow-hidden group h-80">
-              <Image
-                src="https://static.wixstatic.com/media/5768ba_b2953e61daad4dd08109df65193010b6~mv2.jpg/v1/fill/w_900,h_600,al_c,q_85,enc_avif,quality_auto/PXL_20251007_225010061.jpg"
-                alt="Full moon kayaking"
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-8">
-                <span className="inline-block px-3 py-1 bg-gold/90 text-forest text-xs font-semibold rounded-full mb-3">
-                  Every Full Moon
-                </span>
-                <h3 className="font-serif text-2xl font-bold mb-2">
-                  Full Moon Kayak Tour
-                </h3>
-                <p className="text-white/80 text-sm">
-                  A magical nighttime paddle under the glow of the full moon.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Important Info */}
-      <section className="py-16 bg-cream">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="bg-white rounded-2xl p-8 md:p-12 shadow-sm border border-sage-muted/20">
-            <h3 className="font-serif text-2xl font-bold text-forest mb-4">
-              Important Information
-            </h3>
-            <ul className="space-y-3 text-warm-gray">
-              <li className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-sage mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                All participants must sign an assumption of risk and release of
-                liability form. Children under 18 must have a parent or legal
-                guardian co-sign.
-              </li>
-              <li className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-sage mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Tours are easily accessible from Ocean City, Berlin, Snow Hill,
-                Ocean Pines, Bishopville, Fenwick DE, and Selbyville DE.
-              </li>
-              <li className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-sage mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                All tours are customizable. Dates, times, and locations can be
-                adjusted to accommodate your group.
-              </li>
-              <li className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-sage mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Limited to 6 kayaks or 8 people (with tandem kayaks) per tour.
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
+      <ToursImportantInfoSection />
     </>
   );
 }

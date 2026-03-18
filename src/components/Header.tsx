@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 
@@ -29,27 +30,22 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 h-[70px] ${
         isScrolled
-          ? "bg-cream/95 backdrop-blur-md shadow-sm py-3"
-          : "bg-transparent py-5"
+          ? "bg-cream/95 backdrop-blur-md shadow-sm"
+          : "bg-transparent"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3 group">
-          <div className={`transition-all duration-300 ${isScrolled ? "w-10 h-10" : "w-12 h-12"} rounded-full bg-forest flex items-center justify-center`}>
-            <svg viewBox="0 0 40 40" className="w-6 h-6 text-cream" fill="currentColor">
-              <path d="M20 4 L12 18 L16 18 L10 30 L15 30 L8 38 L32 38 L25 30 L30 30 L24 18 L28 18 Z" />
-            </svg>
-          </div>
-          <div>
-            <span className={`font-serif font-bold tracking-tight transition-all ${isScrolled ? "text-lg" : "text-xl"} text-forest`}>
-              W.H. Peters
-            </span>
-            <span className={`block text-xs tracking-widest uppercase text-sage transition-opacity ${isScrolled ? "opacity-0 h-0" : "opacity-100"}`}>
-              Outdoor Adventures
-            </span>
-          </div>
+      <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+        <Link href="/" className="flex items-center group">
+          <Image
+            src="/logo-horizontal-transparent.png"
+            alt="W.H. Peters Outdoor Adventures"
+            width={1271}
+            height={423}
+            className="logo transition-all duration-300 max-h-[62px] w-auto"
+            priority
+          />
         </Link>
 
         {/* Desktop Nav */}
@@ -61,7 +57,9 @@ export default function Header() {
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                 pathname === link.href
                   ? "bg-forest text-cream"
-                  : "text-forest hover:bg-forest/10"
+                  : isScrolled
+                  ? "text-forest hover:bg-forest/10"
+                  : "text-white hover:bg-white/20"
               }`}
             >
               {link.label}
@@ -77,7 +75,7 @@ export default function Header() {
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden p-2 text-forest"
+          className={`md:hidden p-2 ${isScrolled ? "text-forest" : "text-white"}`}
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           aria-label="Toggle menu"
         >
