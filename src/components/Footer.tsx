@@ -56,6 +56,7 @@ export default function Footer() {
                 { href: "/gallery", label: "Gallery" },
                 { href: "/booking", label: "Book a Tour" },
                 { href: "/gift-certificates", label: "Gift Certificates" },
+                { href: "/waiver", label: "Waiver" },
               ].map((link) => (
                 <li key={link.href}>
                   <Link

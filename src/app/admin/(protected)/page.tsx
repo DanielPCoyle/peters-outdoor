@@ -82,20 +82,6 @@ export default async function AdminDashboard() {
         <h1 className="font-serif text-3xl font-bold text-forest">Dashboard</h1>
       </div>
 
-      {/* Booking calendar */}
-      <div className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-forest text-lg">Booked Tours</h2>
-          <Link
-            href="/admin/orders"
-            className="text-sm text-forest underline hover:text-forest/70 transition-colors"
-          >
-            View all orders →
-          </Link>
-        </div>
-        <BookingCalendarWidget />
-      </div>
-
       {/* Monthly Revenue */}
       <div className="mb-10">
         <div className="flex items-center justify-between mb-4">
@@ -145,6 +131,20 @@ export default async function AdminDashboard() {
             accent="gray"
           />
         </div>
+      </div>
+
+      {/* Booking calendar */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-forest text-lg">Booked Tours</h2>
+          <Link
+            href="/admin/orders"
+            className="text-sm text-forest underline hover:text-forest/70 transition-colors"
+          >
+            View all orders →
+          </Link>
+        </div>
+        <BookingCalendarWidget />
       </div>
 
       {/* Gift Certificates header */}

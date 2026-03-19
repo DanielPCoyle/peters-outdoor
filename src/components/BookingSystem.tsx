@@ -783,7 +783,7 @@ export default function BookingSystem() {
                     <div
                       key={t.id}
                       onClick={() => { setSelectedTourId(t.id); setSelectedAddOnIds([]); setSelectedTime(null); setSlotAvailability(null); setIsPrivateCharter(false); }}
-                      className={`relative cursor-pointer rounded-2xl border-2 overflow-hidden transition-all flex-none w-44 snap-start flex flex-col ${
+                      className={`relative cursor-pointer rounded-2xl border-2 overflow-hidden transition-all flex-none w-[40%] min-w-[160px] snap-start flex flex-col ${
                         selectedTourId === t.id
                           ? "border-forest"
                           : "border-sage-muted/20 hover:border-forest/40"

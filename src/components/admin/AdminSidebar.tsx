@@ -110,26 +110,26 @@ export default function AdminSidebar() {
   const sidebarContent = (
     <div className="flex flex-col h-full">
       {/* Brand */}
-      <div className="px-5 py-5 border-b border-white/10">
+      <div className="px-5 py-3 border-b border-white/10">
         <Image
-          src="/logo-horizontal.png"
+          src="/Logo.jpeg"
           alt="W.H. Peters Outdoor Adventures"
-          width={160}
-          height={48}
-          className="w-full max-w-[160px] object-contain"
+          width={64}
+          height={64}
+          className="h-12 w-auto object-contain"
           priority
         />
-        <p className="text-white/40 text-xs mt-2">Admin Portal</p>
+        <p className="text-white/40 text-xs mt-1">Admin Portal</p>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className="flex-1 px-3 py-3 space-y-0.5">
         {navItems.map((item) => (
           <div key={item.href}>
             <Link
               href={item.href}
               onClick={() => setMobileOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              className={`flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                 isActive(item.href)
                   ? "bg-white/15 text-white"
                   : "text-white/60 hover:bg-white/10 hover:text-white"
@@ -174,7 +174,7 @@ export default function AdminSidebar() {
         ))}
 
         {/* Divider */}
-        <div className="pt-4 pb-2">
+        <div className="pt-3 pb-1">
           <p className="text-white/30 text-xs font-semibold uppercase tracking-widest px-3">
             External
           </p>
@@ -186,7 +186,7 @@ export default function AdminSidebar() {
             href={link.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white transition-all"
+            className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white transition-all"
           >
             <span className="flex items-center gap-3">
               {link.icon}
@@ -200,12 +200,12 @@ export default function AdminSidebar() {
       </nav>
 
       {/* Bottom */}
-      <div className="px-3 py-4 border-t border-white/10 space-y-1">
+      <div className="px-3 py-3 border-t border-white/10 space-y-0.5">
         <a
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/10 transition-all"
+          className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/10 transition-all"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -215,7 +215,7 @@ export default function AdminSidebar() {
         <button
           onClick={handleLogout}
           disabled={loggingOut}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/10 transition-all"
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/10 transition-all"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -237,9 +237,9 @@ export default function AdminSidebar() {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-forest h-14 flex items-center justify-between px-4">
         <div className="flex items-center gap-2.5">
           <Image
-            src="/logo-horizontal.png"
+            src="/Logo.jpeg"
             alt="W.H. Peters Outdoor Adventures"
-            width={120}
+            width={36}
             height={36}
             className="h-8 w-auto object-contain"
             priority

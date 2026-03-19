@@ -121,14 +121,14 @@ export default function WaiverForm() {
   return (
     <div className="min-h-screen bg-[#f5f0e8]">
       {/* Header */}
-      <div className="bg-[#2D5016] px-6 py-8 text-center">
+      <div className="bg-[#2D5016] px-6 pt-24 pb-8 text-center">
         <div className="max-w-xl mx-auto">
           <Image
-            src="/logo-horizontal.png"
+            src="/Logo.jpeg"
             alt="W.H. Peters Outdoor Adventures"
-            width={200}
-            height={60}
-            className="h-12 w-auto object-contain mx-auto mb-5"
+            width={80}
+            height={80}
+            className="h-20 w-auto object-contain mx-auto mb-5"
             priority
           />
           <p className="text-[#C9A84C] text-xs font-semibold uppercase tracking-widest mb-1">Before Your Tour</p>
