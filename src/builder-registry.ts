@@ -19,6 +19,7 @@ import GalleryGridSection from "@/components/sections/GalleryGridSection";
 import BookingOptionsSection from "@/components/sections/BookingOptionsSection";
 import BookingFormBlock from "@/components/sections/BookingFormBlock";
 import GroupBookingSection from "@/components/sections/GroupBookingSection";
+import LegalPage from "@/components/sections/LegalPage";
 
 export const builderComponents: RegisteredComponent[] = [
   {
@@ -459,6 +460,24 @@ export const builderComponents: RegisteredComponent[] = [
       { name: "emailLabel", type: "string", defaultValue: "Email Us for Group Pricing" },
       { name: "email", type: "string", defaultValue: "info@petersoutdoor.com" },
       { name: "phone", type: "string", defaultValue: "410-357-1025" },
+    ],
+  },
+
+  {
+    component: LegalPage,
+    name: "LegalPage",
+    inputs: [
+      { name: "title", type: "string", required: true, defaultValue: "Legal" },
+      { name: "lastUpdated", type: "string", defaultValue: "March 2026" },
+      {
+        name: "sections",
+        type: "list",
+        subFields: [
+          { name: "heading", type: "string", required: true },
+          { name: "body", type: "longText", required: true },
+        ],
+        defaultValue: [],
+      },
     ],
   },
 ];

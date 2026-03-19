@@ -45,6 +45,8 @@ const PAGE_IDS = {
   "/booking": "4ddb0984958d4392ad41aa49b6b3b38a",
   "/gallery": "d6eed014897d449a8fd94e78e81915c3",
   "/reviews": "da584097f392405a96368f0645a152df",
+  "/terms":   "19d7493d54a442d2ac56a375cad1c337",
+  "/privacy": "11429ec8ed154445bc9934c52d4149ad",
 };
 
 async function upsertPage(name, urlPath, blocks) {
@@ -415,6 +417,52 @@ const pages = [
           { name: "David & Sarah Thompson", quote: "We booked the Assateague Island tour for our anniversary and it was absolutely magical. Seeing the wild ponies from the water was an experience we'll never forget. The guide's passion for conservation really shines through.", tour: "Assateague Island Tour", rating: 5 },
           { name: "Rachel Kim", quote: "The full moon kayak tour was otherworldly. Paddling under the moonlight with the sounds of nature all around us was an experience I can't describe. Truly a must-do if you're in the Ocean City area.", tour: "Full Moon Tour", rating: 5 },
           { name: "James & Linda Peterson", quote: "We brought our kids (ages 10 and 13) on the St. Martin River tour. They learned so much about the local wildlife and history. It's rare to find an activity the whole family genuinely enjoys — this was it.", tour: "St. Martin River Tour", rating: 5 },
+        ],
+      }),
+    ],
+  },
+
+  {
+    name: "Terms & Conditions",
+    url: "/terms",
+    blocks: [
+      block("LegalPage", {
+        title: "Terms & Conditions",
+        lastUpdated: "March 2026",
+        sections: [
+          { heading: "1. Agreement to Terms", body: "By booking a tour or using our services, you agree to be bound by these Terms & Conditions. If you do not agree with any part of these terms, please do not proceed with a booking." },
+          { heading: "2. Bookings & Payment", body: "All bookings are subject to availability. Full payment is required at the time of booking to confirm your reservation. We accept all major credit and debit cards via our secure Stripe payment processor." },
+          { heading: "3. Cancellations & Refunds", body: "Cancellations made 72 hours or more before the scheduled tour date will receive a full refund. Cancellations within 72 hours of the tour are non-refundable but may be rescheduled at our discretion, subject to availability. No-shows forfeit their full payment." },
+          { heading: "4. Weather & Safety", body: "Your safety is our top priority. We reserve the right to cancel or reschedule tours due to unsafe weather conditions, high winds, or other environmental factors. In such cases, you will receive a full refund or the option to reschedule at no additional cost." },
+          { heading: "5. Liability Release", body: "All participants must sign a liability release waiver before participating in any tour. Kayaking involves inherent risks. By joining a tour, you acknowledge and accept these risks. Children under 18 must have a parent or legal guardian co-sign the release form." },
+          { heading: "6. Participant Responsibilities", body: "Participants are responsible for disclosing any medical conditions, physical limitations, or swimming ability prior to the tour. Alcohol consumption before or during tours is strictly prohibited. We reserve the right to remove any participant whose behavior poses a safety risk." },
+          { heading: "7. Equipment", body: "All necessary equipment — including kayaks, paddles, and personal flotation devices — is provided. Participants are responsible for any damage to equipment caused by negligence or misuse." },
+          { heading: "8. Intellectual Property", body: "All content on this website, including photographs, text, and branding, is the property of W.H. Peters Outdoor Adventures and may not be reproduced without written permission." },
+          { heading: "9. Governing Law", body: "These terms are governed by the laws of the State of Maryland. Any disputes arising from these terms or your use of our services shall be resolved in the courts of Worcester County, Maryland." },
+          { heading: "10. Contact", body: "Questions about these terms? Email us at info@petersoutdoor.com or call 410-357-1025." },
+        ],
+      }),
+    ],
+  },
+
+  {
+    name: "Privacy Policy",
+    url: "/privacy",
+    blocks: [
+      block("LegalPage", {
+        title: "Privacy Policy",
+        lastUpdated: "March 2026",
+        sections: [
+          { heading: "1. Information We Collect", body: "When you book a tour or contact us, we collect personal information such as your name, email address, phone number, and payment details. We also collect information you provide when signing liability waivers or subscribing to our newsletter." },
+          { heading: "2. How We Use Your Information", body: "We use your information to process bookings, send confirmation emails, communicate about your tour, and improve our services. With your consent, we may send you occasional newsletters about upcoming tours and special events. We do not sell your personal information to third parties." },
+          { heading: "3. Payment Information", body: "All payments are processed securely through Stripe. We do not store your credit card details on our servers. Stripe's privacy policy governs how payment data is handled." },
+          { heading: "4. Cookies & Analytics", body: "Our website may use cookies and analytics tools to understand how visitors interact with our site. This helps us improve the user experience. You can disable cookies in your browser settings at any time." },
+          { heading: "5. Data Sharing", body: "We do not sell or rent your personal data. We may share information with trusted service providers (such as our email delivery and payment processors) solely to operate our business. All service providers are contractually obligated to protect your data." },
+          { heading: "6. Data Retention", body: "We retain your personal information for as long as necessary to fulfill the purposes outlined in this policy, comply with legal obligations, and resolve disputes. You may request deletion of your data at any time by contacting us." },
+          { heading: "7. Your Rights", body: "You have the right to access, correct, or delete your personal information. To exercise these rights, email us at info@petersoutdoor.com. We will respond to your request within 30 days." },
+          { heading: "8. Children's Privacy", body: "Our services are not directed to children under the age of 13. We do not knowingly collect personal information from children. If you believe a child has provided us with personal information, please contact us and we will delete it promptly." },
+          { heading: "9. Changes to This Policy", body: "We may update this Privacy Policy from time to time. We will notify you of significant changes by posting the updated policy on this page with a revised date. Continued use of our services after changes constitutes acceptance of the updated policy." },
+          { heading: "10. Contact", body: "If you have any questions or concerns about this Privacy Policy, please contact us at info@petersoutdoor.com or call 410-357-1025." },
         ],
       }),
     ],
