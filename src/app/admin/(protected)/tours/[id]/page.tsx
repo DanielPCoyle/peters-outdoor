@@ -20,6 +20,8 @@ const EMPTY_FORM = {
   isActive: true,
   sortOrder: "0",
   maxGuests: "8",
+  privatePartyEnabled: false,
+  privatePartyRate: "",
 };
 
 type FormData = typeof EMPTY_FORM;
@@ -36,6 +38,8 @@ function tourToForm(t: Tour): FormData {
     isActive: t.isActive,
     sortOrder: String(t.sortOrder),
     maxGuests: String(t.maxGuests ?? 8),
+    privatePartyEnabled: t.privatePartyEnabled ?? false,
+    privatePartyRate: t.privatePartyRate != null ? String(t.privatePartyRate) : "",
   };
 }
 
@@ -51,6 +55,8 @@ function formToPayload(f: FormData) {
     isActive: f.isActive,
     sortOrder: Number(f.sortOrder) || 0,
     maxGuests: Number(f.maxGuests) || 8,
+    privatePartyEnabled: f.privatePartyEnabled,
+    privatePartyRate: f.privatePartyRate !== "" ? Number(f.privatePartyRate) : null,
   };
 }
 
@@ -189,6 +195,48 @@ function DetailsTab({ tour, onSaved }: { tour: Tour; onSaved: (updated: Tour) =>
           <label htmlFor="isActive" className="text-sm font-medium text-gray-700">
             Active (visible to customers)
           </label>
+        </div>
+
+        {/* Private Party flat rate */}
+        <div className="sm:col-span-2 pt-2">
+          <div className="rounded-xl border border-gray-200 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-700">Private Party / Full Boat Charter</p>
+                <p className="text-xs text-gray-400 mt-0.5">Offer this tour as a flat-rate private charter booking</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => set("privatePartyEnabled", !form.privatePartyEnabled)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none ${
+                  form.privatePartyEnabled ? "bg-forest" : "bg-gray-200"
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ${
+                    form.privatePartyEnabled ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+            {form.privatePartyEnabled && (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Flat Rate (total price for the whole boat)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.privatePartyRate}
+                    onChange={(e) => set("privatePartyRate", e.target.value)}
+                    placeholder="500"
+                    className="w-40 pl-7 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest/30"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

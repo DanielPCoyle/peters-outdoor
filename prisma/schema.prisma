@@ -16,11 +16,13 @@ model Tour {
   duration    String      @default("2–3 hours")
   imageUrl    String
   wildlife    String[]
-  isActive    Boolean     @default(true)
-  sortOrder   Int         @default(0)
-  maxGuests   Int         @default(8) @map("max_guests")
-  createdAt   DateTime    @default(now()) @map("created_at")
-  updatedAt   DateTime    @updatedAt @map("updated_at")
+  isActive             Boolean   @default(true)
+  sortOrder            Int       @default(0)
+  maxGuests            Int       @default(8) @map("max_guests")
+  privatePartyEnabled  Boolean   @default(false) @map("private_party_enabled")
+  privatePartyRate     Decimal?  @db.Decimal(10, 2) @map("private_party_rate")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
   addOns      TourAddOn[]
   timeSlots   TourTimeSlot[]
 

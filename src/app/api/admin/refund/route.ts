@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Stripe not configured." }, { status: 503 });
   }
 
-  const { paymentIntentId, amount } = await req.json();
+  const { paymentIntentId, amount, notes } = await req.json();
   if (!paymentIntentId) {
     return NextResponse.json({ error: "Missing paymentIntentId." }, { status: 400 });
   }
@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
   const refund = await stripe.refunds.create({
     payment_intent: paymentIntentId,
     amount: refundAmountCents,
+    ...(notes ? { metadata: { notes } } : {}),
   });
 
   return NextResponse.json({ refunded: refund.amount / 100, status: refund.status });

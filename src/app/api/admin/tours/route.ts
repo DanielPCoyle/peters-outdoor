@@ -50,6 +50,8 @@ export async function POST(req: NextRequest) {
     isActive: isActive !== false,
     sortOrder: Number(sortOrder) || 0,
     maxGuests: Number(maxGuests) || 8,
+    privatePartyEnabled: false,
+    privatePartyRate: null,
   });
 
   if (!tour) {

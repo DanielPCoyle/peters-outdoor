@@ -13,6 +13,7 @@ interface Props {
 export default function RefundModal({ paymentIntentId, originalAmount, label, onSuccess, onClose }: Props) {
   const [mode, setMode] = useState<"full" | "partial">("full");
   const [partialAmount, setPartialAmount] = useState("");
+  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,6 +30,7 @@ export default function RefundModal({ paymentIntentId, originalAmount, label, on
         body: JSON.stringify({
           paymentIntentId,
           amount: mode === "full" ? null : refundAmount,
+          notes: notes.trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -95,6 +97,18 @@ export default function RefundModal({ paymentIntentId, originalAmount, label, on
             </div>
           </div>
         )}
+
+        {/* Notes */}
+        <div className="mb-4">
+          <label className="block text-xs font-semibold text-forest mb-1.5">Reason / Notes</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="e.g. Customer cancelled, weather, duplicate charge…"
+            rows={2}
+            className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-forest text-sm focus:outline-none focus:ring-2 focus:ring-forest/30 resize-none placeholder-warm-gray/50"
+          />
+        </div>
 
         {error && (
           <p className="text-red-600 text-xs mb-4">{error}</p>
