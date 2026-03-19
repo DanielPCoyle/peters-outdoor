@@ -4,30 +4,6 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import SignaturePad from "signature_pad";
 import Image from "next/image";
 
-const LIABILITY_TEXT = `RELEASE OF LIABILITY, WAIVER OF CLAIMS, AND ASSUMPTION OF RISK AGREEMENT
-
-In consideration of being permitted to participate in guided kayak eco-tours and related activities ("Activities") offered by W.H. Peters Outdoor Adventures ("Company"), I, the undersigned participant, agree to the following:
-
-1. ASSUMPTION OF RISK
-I understand and acknowledge that kayaking and water-based outdoor activities involve inherent risks, dangers, and hazards including but not limited to: drowning, capsizing, collision with watercraft or submerged objects, exposure to wildlife, adverse weather conditions, physical exhaustion, and personal injury or death. I voluntarily assume all risks associated with participation in the Activities.
-
-2. RELEASE OF LIABILITY
-I hereby release, waive, and discharge W.H. Peters Outdoor Adventures, its owners, employees, guides, and agents (collectively "Released Parties") from any and all claims, demands, losses, damages, actions, causes of action, or liability of any kind arising out of or related to my participation in the Activities, whether caused by negligence of the Released Parties or otherwise.
-
-3. MEDICAL AUTHORIZATION
-I certify that I am physically fit and have no medical conditions that would prevent safe participation. I authorize the Released Parties to obtain emergency medical treatment on my behalf should I become incapacitated and unable to make such a decision myself.
-
-4. EQUIPMENT AND SAFETY
-I agree to follow all safety instructions provided by the guide, wear a properly fitted personal flotation device (PFD) at all times while on the water, and use all equipment in the manner instructed. I understand that failure to follow instructions may result in removal from the activity without refund.
-
-5. INDEMNIFICATION
-I agree to indemnify and hold harmless the Released Parties from any loss, liability, damage, or cost they may incur due to my participation in the Activities, whether caused by negligence or otherwise.
-
-6. GOVERNING LAW
-This agreement shall be governed by the laws of the State of Maryland. If any provision is found unenforceable, the remaining provisions shall continue in full force and effect.
-
-7. ACKNOWLEDGMENT
-I have read this agreement carefully, understand its contents, and sign it voluntarily. I am 18 years of age or older, or if a minor, this form is being signed by my parent or legal guardian.`;
 
 export default function WaiverForm() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -40,6 +16,14 @@ export default function WaiverForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [waiverContent, setWaiverContent] = useState<string>("");
+
+  useEffect(() => {
+    fetch("/api/waiver-content")
+      .then((r) => r.json())
+      .then(({ content }) => setWaiverContent(content))
+      .catch(() => {});
+  }, []);
 
   const resizeCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -203,9 +187,20 @@ export default function WaiverForm() {
             <h2 className="text-sm font-bold text-[#2D5016] uppercase tracking-widest">Release of Liability</h2>
           </div>
           <div className="px-6 py-5 max-h-72 overflow-y-auto">
-            <pre className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap font-sans">
-              {LIABILITY_TEXT}
-            </pre>
+            {waiverContent ? (
+              <div
+                className="prose prose-sm max-w-none text-gray-600 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-[#2D5016] [&_h3]:text-xs [&_h3]:font-bold [&_h3]:text-[#2D5016] [&_p]:text-xs [&_p]:leading-relaxed [&_ul]:text-xs [&_ol]:text-xs"
+                dangerouslySetInnerHTML={{ __html: waiverContent }}
+              />
+            ) : (
+              <div className="flex items-center gap-2 text-gray-400 text-xs py-4">
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Loading waiver content…
+              </div>
+            )}
           </div>
         </div>
 

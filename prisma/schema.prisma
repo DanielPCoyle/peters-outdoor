@@ -80,6 +80,13 @@ model Waiver {
   @@map("waivers")
 }
 
+model Settings {
+  key   String @id
+  value String
+
+  @@map("settings")
+}
+
 model GiftCertificate {
   id                    String    @id @default(uuid())
   createdAt             DateTime  @default(now()) @map("created_at")

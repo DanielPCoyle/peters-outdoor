@@ -1,20 +1,63 @@
 import { getAllRequests } from "@/lib/giftCertStore";
 import Link from "next/link";
 import BookingCalendarWidget from "@/components/admin/BookingCalendarWidget";
+import Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
 
 const STRIPE_DASHBOARD = "https://dashboard.stripe.com";
 const BUILDERIO_DASHBOARD = "https://builder.io/content";
 
+async function getMonthlyRevenue() {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startTs = Math.floor(startOfMonth.getTime() / 1000);
+
+  let ordersRevenue = 0;
+  let addOnsRevenue = 0;
+  let orderCount = 0;
+
+  if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes("your_secret_key")) {
+    try {
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+      const intents = await stripe.paymentIntents.list({
+        limit: 100,
+        created: { gte: startTs },
+      });
+      const tourOrders = intents.data.filter(
+        (pi) => pi.metadata?.tourId && pi.status === "succeeded"
+      );
+      orderCount = tourOrders.length;
+      ordersRevenue = tourOrders.reduce((s, pi) => s + pi.amount / 100, 0);
+      addOnsRevenue = tourOrders.reduce(
+        (s, pi) => s + parseFloat(pi.metadata?.addOnsTotal ?? "0"),
+        0
+      );
+    } catch {
+      // Stripe unavailable — show zeros
+    }
+  }
+
+  return { ordersRevenue, addOnsRevenue, orderCount };
+}
+
 export default async function AdminDashboard() {
-  const requests = await getAllRequests();
+  const [requests, monthlyRevenue] = await Promise.all([
+    getAllRequests(),
+    getMonthlyRevenue(),
+  ]);
   const active          = requests.filter((r) => r.status === "active");
   const pendingPayment  = requests.filter((r) => r.status === "pending_payment");
   const redeemed        = requests.filter((r) => r.status === "redeemed");
-  const recent = requests.slice(0, 5);
-
   const activeRevenue = active.reduce((s, r) => s + r.amount, 0);
+
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthlyGiftCertRevenue = requests
+    .filter((r) => r.status !== "pending_payment" && new Date(r.createdAt) >= startOfMonth)
+    .reduce((s, r) => s + r.amount, 0);
+  const { ordersRevenue, addOnsRevenue, orderCount } = monthlyRevenue;
+  const monthlyTotal = ordersRevenue + monthlyGiftCertRevenue;
 
   return (
     <div className="p-6 lg:p-10 max-w-6xl">
@@ -38,9 +81,60 @@ export default async function AdminDashboard() {
         <BookingCalendarWidget />
       </div>
 
+      {/* Monthly Revenue */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-xs font-semibold text-warm-gray uppercase tracking-widest mb-0.5">
+              {now.toLocaleString("en-US", { month: "long", year: "numeric" })}
+            </p>
+            <h2 className="font-serif text-2xl font-bold text-forest">Revenue</h2>
+          </div>
+          <Link
+            href="/admin/orders"
+            className="text-sm text-forest underline hover:text-forest/70 transition-colors"
+          >
+            View orders →
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <RevenueCard
+            label="Total"
+            amount={monthlyTotal}
+            sub="All sources"
+            accent="forest"
+            primary
+          />
+          <RevenueCard
+            label="Orders"
+            amount={ordersRevenue}
+            sub={`${orderCount} booking${orderCount !== 1 ? "s" : ""}`}
+            accent="sage"
+          />
+          <RevenueCard
+            label="Gift Certificates"
+            amount={monthlyGiftCertRevenue}
+            sub="Sold this month"
+            accent="gold"
+          />
+          <RevenueCard
+            label="Add-ons"
+            amount={addOnsRevenue}
+            sub="Included in orders"
+            accent="gray"
+          />
+        </div>
+      </div>
+
       {/* Gift Certificates header */}
-      <div className="mb-6">
+      <div className="flex items-center justify-between mb-6">
         <h2 className="font-serif text-2xl font-bold text-forest">Gift Certificates</h2>
+        <Link
+          href="/admin/gift-certificates"
+          className="text-sm text-forest underline hover:text-forest/70 transition-colors"
+        >
+          View all →
+        </Link>
       </div>
 
       {/* Stats */}
@@ -59,48 +153,6 @@ export default async function AdminDashboard() {
           accent="gold"
         />
         <StatCard label="Total Sold" value={requests.length} sub="All time" accent="gray" />
-      </div>
-
-      {/* Recent gift cert requests */}
-      <div className="mb-10">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-forest text-lg">Recent Requests</h3>
-          <Link
-            href="/admin/gift-certificates"
-            className="text-sm text-forest underline hover:text-forest/70 transition-colors"
-          >
-            View all →
-          </Link>
-        </div>
-
-        {recent.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center text-warm-gray text-sm">
-            No gift certificate requests yet.
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-            {recent.map((req, i) => (
-              <div
-                key={req.id}
-                className={`flex items-center justify-between p-4 gap-4 ${
-                  i < recent.length - 1 ? "border-b border-gray-100" : ""
-                }`}
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-forest text-sm truncate">{req.yourName}</p>
-                  <p className="text-warm-gray text-xs">{req.yourEmail}</p>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="font-bold text-forest">${req.amount}</p>
-                  <p className="text-xs text-warm-gray">
-                    {new Date(req.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                  </p>
-                </div>
-                <StatusBadge status={req.status} />
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* External links */}
@@ -128,6 +180,38 @@ export default async function AdminDashboard() {
           badge="builder.io"
         />
       </div>
+    </div>
+  );
+}
+
+function RevenueCard({
+  label,
+  amount,
+  sub,
+  accent,
+  primary = false,
+}: {
+  label: string;
+  amount: number;
+  sub: string;
+  accent: "gold" | "forest" | "sage" | "gray";
+  primary?: boolean;
+}) {
+  const colors = {
+    gold: "bg-gold/10 text-gold-dark",
+    forest: "bg-forest/10 text-forest",
+    sage: "bg-sage-muted/30 text-sage",
+    gray: "bg-gray-100 text-gray-500",
+  };
+  return (
+    <div className={`rounded-2xl border p-5 ${primary ? "bg-forest text-white border-forest" : "bg-white border-gray-200"}`}>
+      <div className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold mb-3 ${primary ? "bg-white/20 text-white" : colors[accent]}`}>
+        {label}
+      </div>
+      <p className={`text-3xl font-bold mb-1 ${primary ? "text-white" : "text-forest"}`}>
+        ${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      </p>
+      <p className={`text-xs ${primary ? "text-white/70" : "text-warm-gray"}`}>{sub}</p>
     </div>
   );
 }
@@ -197,20 +281,3 @@ function ExternalCard({
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const styles: Record<string, string> = {
-    pending_payment: "bg-amber-50 text-amber-700 border-amber-200",
-    active:          "bg-green-50 text-green-700 border-green-200",
-    redeemed:        "bg-blue-50 text-blue-700 border-blue-200",
-  };
-  const labels: Record<string, string> = {
-    pending_payment: "Pending",
-    active:          "Active",
-    redeemed:        "Redeemed",
-  };
-  return (
-    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border shrink-0 ${styles[status] ?? "bg-gray-50 text-gray-500 border-gray-200"}`}>
-      {labels[status] ?? status}
-    </span>
-  );
-}
