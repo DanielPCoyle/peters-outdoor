@@ -7,12 +7,49 @@ function stripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY!);
 }
 
-/** GET /api/admin/checkin?pi=...&token=... OR ?cert=...&token=... */
+/** GET /api/admin/checkin?pi=...&token=... OR ?cert=...&token=... OR ?code=BOOK-XXXX */
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
   const pi = searchParams.get("pi");
   const cert = searchParams.get("cert");
   const token = searchParams.get("token");
+  const code = searchParams.get("code"); // manual booking code lookup
+
+  // ── Manual lookup by booking code ──
+  if (code) {
+    if (!process.env.STRIPE_SECRET_KEY)
+      return NextResponse.json({ error: "Stripe not configured." }, { status: 503 });
+
+    const results = await stripe().paymentIntents.search({
+      query: `metadata["bookingCode"]:"${code.trim().toUpperCase()}"`,
+      limit: 1,
+    });
+
+    const intent = results.data[0];
+    if (!intent) return NextResponse.json({ error: "Booking not found." }, { status: 404 });
+
+    const m = intent.metadata ?? {};
+    return NextResponse.json({
+      type: "paid",
+      id: intent.id,
+      customerName: m.customerName ?? "",
+      email: intent.receipt_email ?? "",
+      phone: m.phone ?? "",
+      tourName: m.tourName ?? m.tourId ?? "",
+      date: m.date ?? "",
+      guests: m.guests ?? "",
+      isPrivateCharter: m.isPrivateCharter === "true",
+      notes: m.notes ?? "",
+      addOns: m.addOns ?? "",
+      amount: intent.amount / 100,
+      checkedIn: m.checkedIn === "true",
+      checkedInAt: m.checkedInAt ?? null,
+      confirmationCode: m.confirmationCode ?? null,
+      bookingCode: m.bookingCode ?? code,
+      // token-free: pi ID is returned so the POST can use it
+      piId: intent.id,
+    });
+  }
 
   if (!token) return NextResponse.json({ error: "Missing token." }, { status: 400 });
 
@@ -75,12 +112,30 @@ export async function GET(req: NextRequest) {
 
 /** POST /api/admin/checkin — perform the check-in */
 export async function POST(req: NextRequest) {
-  const { pi, cert, token } = await req.json();
+  const { pi, cert, token, piId } = await req.json();
 
-  if (!token) return NextResponse.json({ error: "Missing token." }, { status: 400 });
+  // piId is used for manual (no-token) check-ins; the middleware already
+  // verified the admin session cookie, so no HMAC token is needed here.
+  if (!token && !piId) return NextResponse.json({ error: "Missing token." }, { status: 400 });
 
   const confirmationCode = generateConfirmationCode();
   const now = new Date().toISOString();
+
+  // ── Manual check-in by piId (no HMAC token needed — admin session verified by middleware) ──
+  if (piId && !token) {
+    if (!process.env.STRIPE_SECRET_KEY)
+      return NextResponse.json({ error: "Stripe not configured." }, { status: 503 });
+
+    const intent = await stripe().paymentIntents.retrieve(piId);
+    if (intent.metadata?.checkedIn === "true") {
+      return NextResponse.json({ confirmationCode: intent.metadata.confirmationCode, alreadyCheckedIn: true });
+    }
+    const confirmationCode = generateConfirmationCode();
+    await stripe().paymentIntents.update(piId, {
+      metadata: { ...intent.metadata, checkedIn: "true", checkedInAt: new Date().toISOString(), confirmationCode },
+    });
+    return NextResponse.json({ confirmationCode });
+  }
 
   // ── Paid booking ──
   if (pi) {

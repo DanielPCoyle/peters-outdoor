@@ -139,6 +139,7 @@ export default function Footer() {
           <div className="flex gap-4">
             <Link href="/privacy" className="hover:text-cream transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-cream transition-colors">Terms & Conditions</Link>
+            <a href="https://simplerdevelopment.com" target="_blank" rel="noopener noreferrer" className="hover:text-cream transition-colors">Site by simplerdevelopment.com</a>
           </div>
         </div>
       </div>

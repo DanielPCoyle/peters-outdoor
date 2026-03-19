@@ -33,10 +33,20 @@ export async function verifyCheckinToken(
   return expected === token;
 }
 
-/** Short random confirmation code shown to the guest at check-in */
+/** Short random confirmation code shown to the guest at check-in (admin side) */
 export function generateConfirmationCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "CHKIN-";
+  for (let i = 0; i < 6; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return code;
+}
+
+/** Booking reference code shown in the confirmation email */
+export function generateBookingCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let code = "BOOK-";
   for (let i = 0; i < 6; i++) {
     code += chars[Math.floor(Math.random() * chars.length)];
   }

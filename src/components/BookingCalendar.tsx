@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface BookingCalendarProps {
   selected: Date | null;
   onSelect: (date: Date) => void;
+  /** YYYY-MM-DD strings that have at least one time slot. When defined, dots are shown and non-slot days are dimmed. */
+  availableDates?: Set<string>;
+  /** When provided, the calendar will jump to this month (ignores day). */
+  initialMonth?: Date | null;
 }
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -13,16 +17,24 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-export default function BookingCalendar({ selected, onSelect }: BookingCalendarProps) {
+export default function BookingCalendar({ selected, onSelect, availableDates, initialMonth }: BookingCalendarProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
   const [viewDate, setViewDate] = useState(() => {
-    const d = new Date();
+    const d = initialMonth ? new Date(initialMonth) : new Date();
     d.setDate(1);
     d.setHours(0, 0, 0, 0);
     return d;
   });
+
+  useEffect(() => {
+    if (!initialMonth) return;
+    const d = new Date(initialMonth);
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    setViewDate(d);
+  }, [initialMonth]);
 
   const year = viewDate.getFullYear();
   const month = viewDate.getMonth();
@@ -110,20 +122,35 @@ export default function BookingCalendar({ selected, onSelect }: BookingCalendarP
           const past = isPast(day);
           const sel = isSelected(day);
           const tod = isToday(day);
+          const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          const hasSlots = availableDates ? availableDates.has(dateStr) : undefined;
+          // When availableDates is provided, only slot days are selectable
+          const noSlotDay = availableDates !== undefined && !hasSlots && !past;
+          const disabled = past || noSlotDay;
           return (
             <button
               key={day}
-              onClick={() => !past && onSelect(new Date(year, month, day))}
-              disabled={past}
+              onClick={() => !disabled && onSelect(new Date(year, month, day))}
+              disabled={disabled}
               className={`
-                aspect-square flex items-center justify-center text-sm rounded-full transition-all font-medium
-                ${past ? "text-warm-gray/40 cursor-not-allowed" : "cursor-pointer"}
+                relative flex flex-col items-center justify-center py-1 rounded-xl transition-all font-medium text-sm
+                ${past ? "text-warm-gray/40 cursor-not-allowed" : ""}
+                ${noSlotDay ? "text-warm-gray/30 cursor-not-allowed" : ""}
                 ${sel ? "bg-forest text-white" : ""}
-                ${!sel && !past ? "hover:bg-forest/10 text-forest" : ""}
+                ${!sel && !disabled ? "hover:bg-forest/10 text-forest cursor-pointer" : ""}
                 ${tod && !sel ? "ring-1 ring-forest" : ""}
               `}
             >
-              {day}
+              <span>{day}</span>
+              {availableDates !== undefined && !past && (
+                <span
+                  className={`w-1 h-1 rounded-full mt-0.5 ${
+                    hasSlots
+                      ? sel ? "bg-gold" : "bg-forest"
+                      : "bg-transparent"
+                  }`}
+                />
+              )}
             </button>
           );
         })}

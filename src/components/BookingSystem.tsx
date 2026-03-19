@@ -6,13 +6,12 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import BookingCalendar from "./BookingCalendar";
 import BookingCheckout from "./BookingCheckout";
-import type { Tour, AddOn } from "@/lib/tourStore";
+import type { Tour, AddOn, TourTimeSlot } from "@/lib/tourStore";
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
   : null;
 
-const MAX_GUESTS = 8;
 const PRIVATE_CHARTER_PRICE = 399;
 
 type Step = "select" | "details" | "payment" | "confirmation" | string;
@@ -31,6 +30,123 @@ const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Se
 
 function formatDate(d: Date) {
   return `${MONTH_NAMES[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
+function formatTime12h(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 === 0 ? 12 : h % 12;
+  return `${hour}:${String(m).padStart(2, "0")} ${period}`;
+}
+
+/** Returns true if any active time slot falls within the next `days` calendar days */
+function hasUpcomingSlots(slots: TourTimeSlot[], days = 30): boolean {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const cutoff = new Date(today);
+  cutoff.setDate(today.getDate() + days);
+
+  for (const slot of slots) {
+    if (!slot.isActive) continue;
+    if (slot.type === "specific") {
+      for (const d of slot.dates) {
+        const date = new Date(d + "T12:00:00");
+        if (date >= today && date <= cutoff) return true;
+      }
+    } else if (slot.type === "recurring" && slot.startDate && slot.repeatEvery && slot.repeatCount) {
+      const start = new Date(slot.startDate + "T12:00:00");
+      for (let i = 0; i < slot.repeatCount; i++) {
+        const d = new Date(start);
+        if (slot.repeatEvery === "daily") d.setDate(start.getDate() + i);
+        else if (slot.repeatEvery === "weekly") d.setDate(start.getDate() + i * 7);
+        else if (slot.repeatEvery === "monthly") d.setMonth(start.getMonth() + i);
+        if (d >= today && d <= cutoff) return true;
+      }
+    }
+  }
+  return false;
+}
+
+/** Returns the nearest future YYYY-MM-DD date across all active time slots, or null if none */
+function getNextSlotDate(slots: TourTimeSlot[]): string | null {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let nearest: Date | null = null;
+
+  for (const slot of slots) {
+    if (!slot.isActive) continue;
+    const check = (d: Date) => {
+      if (d >= today && (!nearest || d < nearest)) nearest = d;
+    };
+    if (slot.type === "specific") {
+      slot.dates.forEach((d) => check(new Date(d + "T12:00:00")));
+    } else if (slot.type === "recurring" && slot.startDate && slot.repeatEvery && slot.repeatCount) {
+      const start = new Date(slot.startDate + "T12:00:00");
+      for (let i = 0; i < slot.repeatCount; i++) {
+        const d = new Date(start);
+        if (slot.repeatEvery === "daily") d.setDate(start.getDate() + i);
+        else if (slot.repeatEvery === "weekly") d.setDate(start.getDate() + i * 7);
+        else if (slot.repeatEvery === "monthly") d.setMonth(start.getMonth() + i);
+        check(d);
+      }
+    }
+  }
+  return nearest ? (nearest as Date).toISOString().split("T")[0] : null;
+}
+
+const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function formatNextDate(dateStr: string): string {
+  const d = new Date(dateStr + "T12:00:00");
+  const today = new Date();
+  const sameYear = d.getFullYear() === today.getFullYear();
+  return sameYear
+    ? `${SHORT_MONTHS[d.getMonth()]} ${d.getDate()}`
+    : `${SHORT_MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+}
+
+/** Returns the set of all YYYY-MM-DD dates that have at least one active time slot */
+function getAllSlotDates(slots: TourTimeSlot[]): Set<string> {
+  const dates = new Set<string>();
+  for (const slot of slots) {
+    if (!slot.isActive) continue;
+    if (slot.type === "specific") {
+      slot.dates.forEach((d) => dates.add(d));
+    } else if (slot.type === "recurring" && slot.startDate && slot.repeatEvery && slot.repeatCount) {
+      const start = new Date(slot.startDate + "T12:00:00");
+      for (let i = 0; i < slot.repeatCount; i++) {
+        const d = new Date(start);
+        if (slot.repeatEvery === "daily") d.setDate(start.getDate() + i);
+        else if (slot.repeatEvery === "weekly") d.setDate(start.getDate() + i * 7);
+        else if (slot.repeatEvery === "monthly") d.setMonth(start.getMonth() + i);
+        dates.add(d.toISOString().split("T")[0]);
+      }
+    }
+  }
+  return dates;
+}
+
+/** Returns sorted 24-h time strings available for a given YYYY-MM-DD date */
+function getAvailableTimesForDate(slots: TourTimeSlot[], dateStr: string): string[] {
+  const times = new Set<string>();
+  for (const slot of slots) {
+    if (!slot.isActive) continue;
+    if (slot.type === "specific") {
+      if (slot.dates.includes(dateStr)) times.add(slot.time);
+    } else if (slot.type === "recurring" && slot.startDate && slot.repeatEvery && slot.repeatCount) {
+      // Generate all occurrence dates and check membership
+      const start = new Date(slot.startDate + "T12:00:00");
+      for (let i = 0; i < slot.repeatCount; i++) {
+        const d = new Date(start);
+        if (slot.repeatEvery === "daily") d.setDate(start.getDate() + i);
+        else if (slot.repeatEvery === "weekly") d.setDate(start.getDate() + i * 7);
+        else if (slot.repeatEvery === "monthly") d.setMonth(start.getMonth() + i);
+        const iso = d.toISOString().split("T")[0];
+        if (iso === dateStr) { times.add(slot.time); break; }
+      }
+    }
+  }
+  return Array.from(times).sort();
 }
 
 function StepIndicator({ current }: { current: Step }) {
@@ -124,6 +240,7 @@ function TourInfoModal({ tour, onClose }: { tour: Tour; onClose: () => void }) {
 
 export default function BookingSystem() {
   const topRef = useRef<HTMLDivElement>(null);
+  const tourScrollRef = useRef<HTMLDivElement>(null);
   const [tours, setTours] = useState<Tour[]>([]);
   const [toursLoading, setToursLoading] = useState(true);
   const [step, setStep] = useState<Step>("select");
@@ -145,10 +262,16 @@ export default function BookingSystem() {
     }, 50);
   }, []);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [guests, setGuests] = useState(2);
   const [details, setDetails] = useState({ name: "", email: "", phone: "", notes: "" });
   const [isPrivateCharter, setIsPrivateCharter] = useState(false);
   const [selectedAddOnIds, setSelectedAddOnIds] = useState<string[]>([]);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [requestForm, setRequestForm] = useState({ name: "", email: "", phone: "", preferredDate: "", message: "" });
+  const [requestLoading, setRequestLoading] = useState(false);
+  const [requestSuccess, setRequestSuccess] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [fullyPaidByGiftCert, setFullyPaidByGiftCert] = useState(false);
   const [giftCertInput, setGiftCertInput] = useState("");
@@ -157,6 +280,8 @@ export default function BookingSystem() {
   const [giftCertError, setGiftCertError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [slotAvailability, setSlotAvailability] = useState<{ bookedGuests: number; maxGuests: number; seatsLeft: number } | null>(null);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
   const tour = tours.find((t) => t.id === selectedTourId);
   const tourAddOns: AddOn[] = tour?.addOns ?? [];
@@ -172,7 +297,38 @@ export default function BookingSystem() {
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
 
-  const canProceedToDetails = selectedTourId && selectedDate;
+  const tourTimeSlots = tour?.timeSlots ?? [];
+  const hasTimeSlots = tourTimeSlots.length > 0;
+  const availableDatesSet = hasTimeSlots ? getAllSlotDates(tourTimeSlots) : undefined;
+  const nextSlotDateStr = hasTimeSlots ? getNextSlotDate(tourTimeSlots) : null;
+  const calendarInitialMonth = nextSlotDateStr ? new Date(nextSlotDateStr + "T12:00:00") : null;
+  const availableTimes = selectedDate
+    ? getAvailableTimesForDate(tourTimeSlots, selectedDate.toISOString().split("T")[0])
+    : [];
+  const maxGuests = tour?.maxGuests ?? 8;
+  const canProceedToDetails = selectedTourId && selectedDate && (!hasTimeSlots || (availableTimes.length > 0 && selectedTime)) && (slotAvailability === null || slotAvailability.seatsLeft > 0);
+
+  useEffect(() => {
+    if (!selectedTourId || !selectedDate) {
+      setSlotAvailability(null);
+      return;
+    }
+    const dateStr = selectedDate.toISOString().split("T")[0];
+    // Only fetch if we have a time (when time slots exist) or no time slots (fetch by date only)
+    const hasSlots = (tour?.timeSlots ?? []).length > 0;
+    if (hasSlots && !selectedTime) {
+      setSlotAvailability(null);
+      return;
+    }
+    setAvailabilityLoading(true);
+    const params = new URLSearchParams({ date: dateStr });
+    if (selectedTime) params.set("time", selectedTime);
+    fetch(`/api/tours/${selectedTourId}/availability?${params}`)
+      .then((r) => r.json())
+      .then((data) => setSlotAvailability(data))
+      .catch(() => setSlotAvailability(null))
+      .finally(() => setAvailabilityLoading(false));
+  }, [selectedTourId, selectedDate, selectedTime, tour]);
 
   const handleProceedToDetails = () => {
     if (canProceedToDetails) goToStep("details");
@@ -193,6 +349,7 @@ export default function BookingSystem() {
         body: JSON.stringify({
           tourId: tour.id,
           date: selectedDate.toISOString().split("T")[0],
+          time: selectedTime ?? undefined,
           guests,
           isPrivateCharter,
           selectedAddOnIds,
@@ -305,7 +462,8 @@ export default function BookingSystem() {
           giftCertCode: appliedGiftCert.code,
           tourName: tour.name,
           date: selectedDate.toISOString().split("T")[0],
-          guests: isPrivateCharter ? `Private Charter (up to ${MAX_GUESTS})` : guests,
+          time: selectedTime ?? undefined,
+          guests: isPrivateCharter ? `Private Charter (up to ${maxGuests})` : guests,
           ...details,
         }),
       });
@@ -335,7 +493,8 @@ export default function BookingSystem() {
       body: JSON.stringify({
         tourId: selectedTourId,
         date: selectedDate?.toISOString().split("T")[0],
-        guests: isPrivateCharter ? `Private Charter (up to ${MAX_GUESTS})` : guests,
+        time: selectedTime ?? undefined,
+        guests: isPrivateCharter ? `Private Charter (up to ${maxGuests})` : guests,
         total,
         stripePaymentIntentId,
         ...details,
@@ -347,6 +506,141 @@ export default function BookingSystem() {
     // modal still renderable on confirmation screen too
   }
 
+  const handleRequestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRequestLoading(true);
+    setRequestError(null);
+    try {
+      const res = await fetch("/api/request-date", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tourName: tour?.name ?? "Tour",
+          ...requestForm,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      setRequestSuccess(true);
+    } catch (err: unknown) {
+      setRequestError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setRequestLoading(false);
+    }
+  };
+
+  const renderRequestModal = showRequestModal ? (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={() => setShowRequestModal(false)}
+    >
+      <div
+        className="bg-cream rounded-3xl overflow-hidden max-w-md w-full shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-forest px-6 pt-6 pb-5 relative">
+          <button
+            onClick={() => setShowRequestModal(false)}
+            className="absolute top-4 right-4 w-8 h-8 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <p className="text-gold text-xs font-bold uppercase tracking-widest mb-1">Custom Date Request</p>
+          <h3 className="font-serif text-2xl font-bold text-white">{tour?.name ?? "Request a Tour"}</h3>
+          <p className="text-white/70 text-sm mt-1">Tell us when you'd like to go out and we'll get back to you.</p>
+        </div>
+        <div className="p-6">
+          {requestSuccess ? (
+            <div className="text-center py-4">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-forest/10 rounded-full mb-4">
+                <svg className="w-7 h-7 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="font-semibold text-forest text-base mb-1">Request sent!</p>
+              <p className="text-warm-gray text-sm">We'll reach out to {requestForm.email} to confirm your date.</p>
+              <button
+                onClick={() => setShowRequestModal(false)}
+                className="mt-5 px-6 py-2.5 bg-forest text-white text-sm font-semibold rounded-full hover:bg-forest/90 transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleRequestSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-forest mb-1">Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={requestForm.name}
+                    onChange={(e) => setRequestForm((f) => ({ ...f, name: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-sage-muted/30 text-sm text-forest bg-white focus:outline-none focus:border-forest"
+                    placeholder="Your name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-forest mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    value={requestForm.phone}
+                    onChange={(e) => setRequestForm((f) => ({ ...f, phone: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-sage-muted/30 text-sm text-forest bg-white focus:outline-none focus:border-forest"
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-forest mb-1">Email *</label>
+                <input
+                  type="email"
+                  required
+                  value={requestForm.email}
+                  onChange={(e) => setRequestForm((f) => ({ ...f, email: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-xl border border-sage-muted/30 text-sm text-forest bg-white focus:outline-none focus:border-forest"
+                  placeholder="your@email.com"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-forest mb-1">Preferred Date *</label>
+                <input
+                  type="date"
+                  required
+                  value={requestForm.preferredDate}
+                  onChange={(e) => setRequestForm((f) => ({ ...f, preferredDate: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-xl border border-sage-muted/30 text-sm text-forest bg-white focus:outline-none focus:border-forest"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-forest mb-1">Message</label>
+                <textarea
+                  rows={3}
+                  value={requestForm.message}
+                  onChange={(e) => setRequestForm((f) => ({ ...f, message: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-xl border border-sage-muted/30 text-sm text-forest bg-white focus:outline-none focus:border-forest resize-none"
+                  placeholder="Group size, special requests, questions…"
+                />
+              </div>
+              {requestError && (
+                <p className="text-red-600 text-xs">{requestError}</p>
+              )}
+              <button
+                type="submit"
+                disabled={requestLoading}
+                className="w-full py-3 bg-forest text-white text-sm font-semibold rounded-full hover:bg-forest/90 transition-colors disabled:opacity-60"
+              >
+                {requestLoading ? "Sending…" : "Send Request"}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   const renderModal = infoTour ? (
     <TourInfoModal tour={infoTour} onClose={() => setInfoTour(null)} />
   ) : null;
@@ -355,6 +649,7 @@ export default function BookingSystem() {
     return (
       <>
         {renderModal}
+        {renderRequestModal}
       <div className="text-center py-12 px-4">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-forest/10 rounded-full mb-6">
           <svg className="w-8 h-8 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -374,6 +669,12 @@ export default function BookingSystem() {
             <span className="text-warm-gray">Date</span>
             <span className="text-forest font-medium">{selectedDate && formatDate(selectedDate)}</span>
           </div>
+          {selectedTime && (
+            <div className="flex justify-between text-sm">
+              <span className="text-warm-gray">Time</span>
+              <span className="text-forest font-medium">{formatTime12h(selectedTime)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm">
             <span className="text-warm-gray">Guests</span>
             <span className="text-forest font-medium">{guests}</span>
@@ -437,6 +738,7 @@ export default function BookingSystem() {
   return (
     <>
       {renderModal}
+      {renderRequestModal}
     <div ref={topRef} className="max-w-2xl mx-auto scroll-mt-24">
       {step !== "confirmation" && <StepIndicator current={step} />}
 
@@ -455,50 +757,97 @@ export default function BookingSystem() {
                 Loading tours…
               </div>
             ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {tours.map((t) => (
-                <div
-                  key={t.id}
-                  onClick={() => { setSelectedTourId(t.id); setSelectedAddOnIds([]); }}
-                  className={`relative cursor-pointer rounded-2xl border-2 overflow-hidden transition-all ${
-                    selectedTourId === t.id
-                      ? "border-forest"
-                      : "border-sage-muted/20 hover:border-forest/40"
-                  }`}
-                >
-                  {/* Thumbnail */}
-                  <div className="relative h-40 sm:h-28 w-full">
-                    <Image src={t.imageUrl} alt={t.name} fill className="object-cover" />
-                    {selectedTourId === t.id && (
-                      <div className="absolute inset-0 bg-forest/20 flex items-center justify-center">
-                        <div className="w-6 h-6 bg-forest rounded-full flex items-center justify-center">
-                          <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            <div className="relative -mx-4">
+              {/* Left arrow */}
+              <button
+                onClick={() => tourScrollRef.current?.scrollBy({ left: -200, behavior: "smooth" })}
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-sage-muted/30 rounded-full shadow-md transition-colors"
+                aria-label="Scroll left"
+              >
+                <svg className="w-4 h-4 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+
+              {/* Scroll track */}
+              <div
+                ref={tourScrollRef}
+                className="flex gap-3 overflow-x-auto pb-2 px-10 snap-x snap-mandatory scrollbar-hide"
+              >
+                {tours.map((t) => {
+                  const slots = t.timeSlots ?? [];
+                  const hasSlots = slots.length > 0;
+                  const upcoming = hasSlots && hasUpcomingSlots(slots);
+                  const nextDate = hasSlots ? getNextSlotDate(slots) : null;
+                  return (
+                    <div
+                      key={t.id}
+                      onClick={() => { setSelectedTourId(t.id); setSelectedAddOnIds([]); setSelectedTime(null); setSlotAvailability(null); setIsPrivateCharter(false); }}
+                      className={`relative cursor-pointer rounded-2xl border-2 overflow-hidden transition-all flex-none w-44 snap-start flex flex-col ${
+                        selectedTourId === t.id
+                          ? "border-forest"
+                          : "border-sage-muted/20 hover:border-forest/40"
+                      }`}
+                    >
+                      {/* Thumbnail */}
+                      <div className="relative h-32 w-full shrink-0">
+                        <Image src={t.imageUrl} alt={t.name} fill className="object-cover" />
+                        {selectedTourId === t.id && (
+                          <div className="absolute inset-0 bg-forest/20 flex items-center justify-center">
+                            <div className="w-6 h-6 bg-forest rounded-full flex items-center justify-center">
+                              <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          </div>
+                        )}
+                        {/* Upcoming availability badge */}
+                        {upcoming && selectedTourId !== t.id && (
+                          <span className="absolute top-2 left-2 text-[10px] bg-gold text-forest font-bold px-2 py-0.5 rounded-full leading-tight shadow-sm">
+                            Available
+                          </span>
+                        )}
+                        {/* Info button */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setInfoTour(t); }}
+                          className="absolute top-2 right-2 w-6 h-6 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors"
+                          aria-label={`More info about ${t.name}`}
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
+                        </button>
+                      </div>
+                      {/* Card body */}
+                      <div className="bg-white p-3 flex flex-col flex-1">
+                        <p className="font-semibold text-forest text-sm leading-tight">{t.name}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-warm-gray">{t.duration}</p>
+                          <p className="text-gold font-bold text-sm">${t.price}<span className="text-warm-gray font-normal text-xs"> /pp</span></p>
+                        </div>
+                        {/* Slot dot indicator — pinned to bottom */}
+                        <div className="flex items-center gap-1 mt-auto pt-2">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${nextDate ? (upcoming ? "bg-forest" : "bg-warm-gray/60") : "bg-warm-gray/30"}`} />
+                          <span className="text-[10px] text-warm-gray">
+                            {!hasSlots ? "No dates scheduled" : nextDate ? `Next: ${formatNextDate(nextDate)}` : "No upcoming dates"}
+                          </span>
                         </div>
                       </div>
-                    )}
-                    {/* Info button */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setInfoTour(t); }}
-                      className="absolute top-2 right-2 w-6 h-6 bg-black/40 hover:bg-black/60 rounded-full flex items-center justify-center text-white transition-colors"
-                      aria-label={`More info about ${t.name}`}
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </button>
-                  </div>
-                  {/* Card body */}
-                  <div className="bg-white p-3">
-                    <p className="font-semibold text-forest text-sm leading-tight">{t.name}</p>
-                    <div className="flex items-center justify-between mt-1">
-                      <p className="text-xs text-warm-gray">{t.duration}</p>
-                      <p className="text-gold font-bold text-sm">${t.price}<span className="text-warm-gray font-normal text-xs"> /pp</span></p>
                     </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
+
+              {/* Right arrow */}
+              <button
+                onClick={() => tourScrollRef.current?.scrollBy({ left: 200, behavior: "smooth" })}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-sage-muted/30 rounded-full shadow-md transition-colors"
+                aria-label="Scroll right"
+              >
+                <svg className="w-4 h-4 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             </div>
             )}
           </div>
@@ -506,8 +855,96 @@ export default function BookingSystem() {
           {/* Calendar */}
           <div>
             <h3 className="font-semibold text-forest mb-3">Select a Date</h3>
-            <BookingCalendar selected={selectedDate} onSelect={setSelectedDate} />
+            <div className="relative">
+              <BookingCalendar
+                selected={selectedDate}
+                onSelect={(d) => { setSelectedDate(d); setSelectedTime(null); }}
+                availableDates={availableDatesSet}
+                initialMonth={calendarInitialMonth}
+              />
+              {/* No-dates overlay */}
+              {selectedTourId && !hasTimeSlots && (
+                <div className="absolute inset-0 rounded-2xl backdrop-blur-sm bg-white/60 flex flex-col items-center justify-center gap-3 z-10">
+                  <div className="text-center px-4">
+                    <p className="font-semibold text-forest text-sm mb-1">No dates scheduled yet</p>
+                    <p className="text-warm-gray text-xs">This tour doesn't have any scheduled departures right now, but we may be able to go out on your preferred date.</p>
+                  </div>
+                  <button
+                    onClick={() => { setRequestSuccess(false); setRequestError(null); setRequestForm({ name: "", email: "", phone: "", preferredDate: "", message: "" }); setShowRequestModal(true); }}
+                    className="px-5 py-2.5 bg-forest text-white text-sm font-semibold rounded-full hover:bg-forest/90 transition-colors shadow-sm"
+                  >
+                    Request a Date
+                  </button>
+                </div>
+              )}
+            </div>
+            {availableDatesSet && (
+              <p className="flex items-center gap-1.5 text-xs text-warm-gray mt-2">
+                <span className="w-2 h-2 rounded-full bg-forest inline-block" />
+                Dates with scheduled departures
+              </p>
+            )}
           </div>
+
+          {/* Time slot picker */}
+          {hasTimeSlots && selectedDate && (
+            <div>
+              <h3 className="font-semibold text-forest mb-3">Select a Time</h3>
+              {availableTimes.length === 0 ? (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-800">
+                  No departures are scheduled for this date. Please choose a different date.
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {availableTimes.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setSelectedTime(t)}
+                      className={`px-5 py-2.5 rounded-full text-sm font-semibold border-2 transition-all ${
+                        selectedTime === t
+                          ? "border-forest bg-forest text-white"
+                          : "border-sage-muted/30 bg-white text-forest hover:border-forest/50"
+                      }`}
+                    >
+                      {formatTime12h(t)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Seats availability indicator */}
+          {slotAvailability !== null && (
+            <div className={`flex items-center gap-2 text-sm px-4 py-2.5 rounded-xl border ${
+              slotAvailability.seatsLeft === 0
+                ? "bg-red-50 border-red-200 text-red-700"
+                : slotAvailability.seatsLeft <= 2
+                ? "bg-amber-50 border-amber-200 text-amber-800"
+                : "bg-forest/5 border-forest/20 text-forest"
+            }`}>
+              {availabilityLoading ? (
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+              ) : slotAvailability.seatsLeft === 0 ? (
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              )}
+              <span className="font-medium">
+                {slotAvailability.seatsLeft === 0
+                  ? "This slot is fully booked"
+                  : `${slotAvailability.seatsLeft} of ${slotAvailability.maxGuests} seats available`}
+              </span>
+            </div>
+          )}
 
           {/* Guest count */}
           <div>
@@ -515,7 +952,7 @@ export default function BookingSystem() {
             <div className="bg-white rounded-2xl border border-sage-muted/20 p-4 flex items-center justify-between">
               <div>
                 <p className="text-forest font-medium text-sm">Guests</p>
-                <p className="text-warm-gray text-xs">Max {MAX_GUESTS} per tour</p>
+                <p className="text-warm-gray text-xs">Max {maxGuests} per tour</p>
               </div>
               <div className="flex items-center gap-4">
                 <button
@@ -526,7 +963,7 @@ export default function BookingSystem() {
                 </button>
                 <span className="text-forest font-bold text-lg w-6 text-center">{guests}</span>
                 <button
-                  onClick={() => setGuests((g) => Math.min(MAX_GUESTS, g + 1))}
+                  onClick={() => setGuests((g) => Math.min(Math.min(maxGuests, slotAvailability?.seatsLeft ?? maxGuests), g + 1))}
                   className="w-8 h-8 rounded-full border border-sage-muted/30 flex items-center justify-center text-forest hover:bg-forest/5 transition-colors font-bold"
                 >
                   +
@@ -536,6 +973,7 @@ export default function BookingSystem() {
           </div>
 
           {/* Private Charter Upgrade */}
+          {(slotAvailability === null || slotAvailability.bookedGuests === 0) && (
           <div
             onClick={() => setIsPrivateCharter((v) => !v)}
             className={`cursor-pointer rounded-2xl border-2 p-4 transition-all ${
@@ -558,7 +996,7 @@ export default function BookingSystem() {
                 <p className="text-forest font-bold text-sm mt-2">
                   ${PRIVATE_CHARTER_PRICE} flat{" "}
                   <span className="text-warm-gray font-normal">
-                    (up to {MAX_GUESTS} guests)
+                    (up to {maxGuests} guests)
                   </span>
                 </p>
               </div>
@@ -575,6 +1013,7 @@ export default function BookingSystem() {
               </div>
             </div>
           </div>
+          )}
 
           {/* Add-ons */}
           {tour && tourAddOns.length > 0 && (
@@ -650,7 +1089,9 @@ export default function BookingSystem() {
             className="w-full py-3.5 rounded-full bg-gold text-forest font-bold text-sm hover:bg-gold-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {canProceedToDetails
-              ? `Continue — ${formatDate(selectedDate!)} · ${isPrivateCharter ? "Private Charter" : `${guests} guest${guests > 1 ? "s" : ""}`}`
+              ? `Continue — ${formatDate(selectedDate!)}${selectedTime ? ` at ${formatTime12h(selectedTime)}` : ""} · ${isPrivateCharter ? "Private Charter" : `${guests} guest${guests > 1 ? "s" : ""}`}`
+              : hasTimeSlots && selectedDate && availableTimes.length > 0 && !selectedTime
+              ? "Select a departure time to continue"
               : "Select a tour and date to continue"}
           </button>
         </div>
@@ -662,7 +1103,7 @@ export default function BookingSystem() {
           <div className="bg-forest/5 rounded-2xl p-4 border border-forest/10 text-sm">
             <div className="flex justify-between items-center">
               <span className="text-warm-gray">
-                {tour?.name} · {selectedDate && formatDate(selectedDate)} ·{" "}
+                {tour?.name} · {selectedDate && formatDate(selectedDate)}{selectedTime ? ` at ${formatTime12h(selectedTime)}` : ""} ·{" "}
                 {isPrivateCharter ? "Private Charter" : `${guests} guest${guests > 1 ? "s" : ""}`}
               </span>
               <button onClick={() => goToStep("select")} className="text-forest underline text-xs">Edit</button>
@@ -754,7 +1195,7 @@ export default function BookingSystem() {
               <div>
                 <p className="text-forest font-semibold">{tour?.name}</p>
                 <p className="text-warm-gray">
-                  {selectedDate && formatDate(selectedDate)} ·{" "}
+                  {selectedDate && formatDate(selectedDate)}{selectedTime ? ` at ${formatTime12h(selectedTime)}` : ""} ·{" "}
                   {isPrivateCharter ? "Private Charter" : `${guests} guest${guests > 1 ? "s" : ""}`}
                 </p>
                 <p className="text-warm-gray">{details.name} · {details.email}</p>

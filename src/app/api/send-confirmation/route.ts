@@ -4,7 +4,8 @@ import {
   emailWrapper, detailCard, detailRow, sectionHeading,
   para, signature, ctaButton, qrCodeBlock, siteUrl,
 } from "@/lib/emailTemplate";
-import { generateCheckinToken } from "@/lib/checkinToken";
+import { generateCheckinToken, generateBookingCode } from "@/lib/checkinToken";
+import Stripe from "stripe";
 
 const TOUR_NAMES: Record<string, string> = {
   newport: "Newport Bay Salt Marsh Tour",
@@ -22,16 +23,23 @@ export async function POST(req: NextRequest) {
 
   const resend = new Resend(process.env.RESEND_API_KEY);
 
-  const { tourId, date, guests, name, email, phone, notes, total, addOns, stripePaymentIntentId } = await req.json();
+  const { tourId, date, time, guests, name, email, phone, notes, total, addOns, stripePaymentIntentId } = await req.json();
 
   const tourName = TOUR_NAMES[tourId] ?? tourId;
   const formattedDate = new Date(date).toLocaleDateString("en-US", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
+  function fmt12h(t: string): string {
+    const [h, m] = t.split(":").map(Number);
+    const p = h >= 12 ? "PM" : "AM";
+    return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")} ${p}`;
+  }
+
   const rows = [
     detailRow("Tour", tourName),
     detailRow("Date", formattedDate),
+    time ? detailRow("Time", fmt12h(time)) : "",
     detailRow("Guests", String(guests)),
     phone ? detailRow("Phone", phone) : "",
     addOns ? detailRow("Add-ons", addOns) : "",
@@ -39,12 +47,19 @@ export async function POST(req: NextRequest) {
     detailRow("Total Paid", `<span style="color:#C9A84C;font-size:18px;">$${Number(total).toFixed(2)}</span>`, true),
   ].join("");
 
-  // Generate QR code for admin check-in
+  // Generate booking code + QR for check-in
   let qrBlock = "";
-  if (stripePaymentIntentId) {
+  if (stripePaymentIntentId && process.env.STRIPE_SECRET_KEY) {
+    const bookingCode = generateBookingCode();
     const token = await generateCheckinToken(stripePaymentIntentId);
     const checkinUrl = `${siteUrl()}/admin/checkin?pi=${stripePaymentIntentId}&token=${token}`;
-    qrBlock = qrCodeBlock(checkinUrl, stripePaymentIntentId);
+    qrBlock = qrCodeBlock(checkinUrl, bookingCode);
+
+    // Store the booking code in Stripe metadata so the admin check-in page can surface it
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    stripe.paymentIntents.update(stripePaymentIntentId, {
+      metadata: { bookingCode },
+    }).catch(console.error);
   }
 
   const body = `

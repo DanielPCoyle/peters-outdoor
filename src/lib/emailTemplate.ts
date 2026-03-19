@@ -129,16 +129,19 @@ export function ctaButton(label: string, href: string): string {
  * so the <img src> is a plain HTTPS URL that email clients can fetch normally.
  * (Data URIs are stripped by Gmail and most other email clients.)
  */
-export function qrCodeBlock(checkinUrl: string, identifier: string): string {
+export function qrCodeBlock(checkinUrl: string, confirmationCode: string): string {
   const qrImageUrl =
     `https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=10&color=2D5016&bgcolor=FFFFFF&data=${encodeURIComponent(checkinUrl)}`;
   return `
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;border:2px dashed #C9A84C;border-radius:16px;margin-bottom:28px;">
       <tr><td style="padding:28px;text-align:center;">
-        <p style="margin:0 0 4px;color:#6b7280;font-size:11px;font-family:Arial,sans-serif;letter-spacing:2px;text-transform:uppercase;">Admin Check-In QR Code</p>
-        <p style="margin:0 0 16px;color:#4a5568;font-size:13px;font-family:Arial,sans-serif;">Scan at the dock to verify this reservation</p>
-        <img src="${qrImageUrl}" alt="Check-in QR code" width="200" height="200" style="display:block;margin:0 auto 12px;" />
-        <p style="margin:0;color:#6b7280;font-size:11px;font-family:Arial,sans-serif;letter-spacing:1px;">Booking ref: <strong>${identifier}</strong></p>
+        <p style="margin:0 0 4px;color:#6b7280;font-size:11px;font-family:Arial,sans-serif;letter-spacing:2px;text-transform:uppercase;">Check-In QR Code</p>
+        <p style="margin:0 0 16px;color:#4a5568;font-size:13px;font-family:Arial,sans-serif;">Show this to your guide when you arrive</p>
+        <img src="${qrImageUrl}" alt="Check-in QR code" width="200" height="200" style="display:block;margin:0 auto 20px;" />
+        <p style="margin:0 0 8px;color:#6b7280;font-size:11px;font-family:Arial,sans-serif;letter-spacing:2px;text-transform:uppercase;">Your Confirmation Code</p>
+        <div style="display:inline-block;background:#2D5016;border-radius:10px;padding:10px 28px;">
+          <p style="margin:0;color:#C9A84C;font-size:22px;font-weight:bold;font-family:'Courier New',monospace;letter-spacing:3px;">${confirmationCode}</p>
+        </div>
       </td></tr>
     </table>`;
 }

@@ -13,7 +13,7 @@ import { generateCheckinToken } from "@/lib/checkinToken";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { giftCertCode, tourName, date, guests, name, email } = body;
+  const { giftCertCode, tourName, date, time, guests, name, email } = body;
 
   if (!giftCertCode || !tourName || !date || !name || !email) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
@@ -36,9 +36,16 @@ export async function POST(req: NextRequest) {
       weekday: "long", year: "numeric", month: "long", day: "numeric",
     });
 
+    function fmt12h(t: string): string {
+      const [h, m] = t.split(":").map(Number);
+      const p = h >= 12 ? "PM" : "AM";
+      return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")} ${p}`;
+    }
+
     const rows = [
       detailRow("Tour", tourName),
       detailRow("Date", formattedDate),
+      time ? detailRow("Time", fmt12h(time)) : "",
       detailRow("Guests", String(guests)),
       detailRow(
         "Payment",
@@ -65,7 +72,7 @@ export async function POST(req: NextRequest) {
       </ul>
       ${ctaButton("Browse More Tours", `${siteUrl()}/tours`)}
       ${para("We'll be in touch closer to your tour date with meeting location details and any weather updates. Questions? Reply to this email or call <a href=\"tel:410-357-1025\" style=\"color:#2D5016;\">410-357-1025</a>.")}
-      ${qrCodeBlock(checkinUrl, certCode)}
+      ${qrCodeBlock(checkinUrl, certCode.replace("PETERS-", "BOOK-"))}
       ${signature}
     `;
 

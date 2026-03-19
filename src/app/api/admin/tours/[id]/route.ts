@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateTour, deleteTour } from "@/lib/tourStore";
+import { getTourById, updateTour, deleteTour } from "@/lib/tourStore";
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const tour = await getTourById(id);
+  if (!tour) return NextResponse.json({ error: "Tour not found." }, { status: 404 });
+  return NextResponse.json({ tour });
+}
 
 export async function PUT(
   req: NextRequest,

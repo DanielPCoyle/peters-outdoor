@@ -4,6 +4,17 @@ import type { AddOn } from "./addOnStore";
 
 export type { AddOn };
 
+export interface TourTimeSlot {
+  id: string;
+  time: string; // "09:00" 24-hour
+  type: "specific" | "recurring";
+  dates: string[]; // YYYY-MM-DD for specific
+  startDate: string | null;
+  repeatEvery: "daily" | "weekly" | "monthly" | null;
+  repeatCount: number | null;
+  isActive: boolean;
+}
+
 export interface Tour {
   id: string;
   name: string;
@@ -15,9 +26,11 @@ export interface Tour {
   wildlife: string[];
   isActive: boolean;
   sortOrder: number;
+  maxGuests: number;
   createdAt: string;
   updatedAt: string;
   addOns?: AddOn[];
+  timeSlots?: TourTimeSlot[];
 }
 
 function fromPrisma(t: PrismaTour): Tour {
@@ -32,6 +45,7 @@ function fromPrisma(t: PrismaTour): Tour {
     wildlife: t.wildlife,
     isActive: t.isActive,
     sortOrder: t.sortOrder,
+    maxGuests: t.maxGuests,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
   };
@@ -73,7 +87,7 @@ export async function getTourById(id: string): Promise<Tour | null> {
 }
 
 export async function createTour(
-  input: Omit<Tour, "id" | "createdAt" | "updatedAt">
+  input: Omit<Tour, "id" | "createdAt" | "updatedAt"> & { maxGuests?: number }
 ): Promise<Tour | null> {
   try {
     const row = await prisma.tour.create({
@@ -87,6 +101,7 @@ export async function createTour(
         wildlife: input.wildlife,
         isActive: input.isActive,
         sortOrder: input.sortOrder,
+        maxGuests: input.maxGuests ?? 8,
       },
     });
     return fromPrisma(row);
@@ -113,6 +128,7 @@ export async function updateTour(
         ...(input.wildlife !== undefined && { wildlife: input.wildlife }),
         ...(input.isActive !== undefined && { isActive: input.isActive }),
         ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
+        ...(input.maxGuests !== undefined && { maxGuests: input.maxGuests }),
       },
     });
     return fromPrisma(row);

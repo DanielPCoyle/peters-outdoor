@@ -11,6 +11,10 @@ export async function GET() {
           include: { addOn: true },
           orderBy: { addOn: { sortOrder: "asc" } },
         },
+        timeSlots: {
+          where: { isActive: true },
+          orderBy: { time: "asc" },
+        },
       },
     });
 
@@ -25,6 +29,7 @@ export async function GET() {
       wildlife: t.wildlife,
       isActive: t.isActive,
       sortOrder: t.sortOrder,
+      maxGuests: t.maxGuests ?? 8,
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),
       addOns: t.addOns
@@ -37,6 +42,16 @@ export async function GET() {
           isActive: ta.addOn.isActive,
           sortOrder: ta.addOn.sortOrder,
         })),
+      timeSlots: t.timeSlots.map((s) => ({
+        id: s.id,
+        time: s.time,
+        type: s.type as "specific" | "recurring",
+        dates: s.dates,
+        startDate: s.startDate ?? null,
+        repeatEvery: (s.repeatEvery ?? null) as "daily" | "weekly" | "monthly" | null,
+        repeatCount: s.repeatCount ?? null,
+        isActive: s.isActive,
+      })),
     }));
 
     return NextResponse.json({ tours });

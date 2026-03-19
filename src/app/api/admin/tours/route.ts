@@ -19,6 +19,7 @@ export async function GET() {
       wildlife: t.wildlife,
       isActive: t.isActive,
       sortOrder: t.sortOrder,
+      maxGuests: t.maxGuests,
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),
       addOnCount: t._count.addOns,
@@ -32,7 +33,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { name, tagline, description, price, duration, imageUrl, wildlife, isActive, sortOrder } = body;
+  const { name, tagline, description, price, duration, imageUrl, wildlife, isActive, sortOrder, maxGuests } = body;
 
   if (!name || !tagline || !description || price == null || !imageUrl) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
@@ -48,6 +49,7 @@ export async function POST(req: NextRequest) {
     wildlife: Array.isArray(wildlife) ? wildlife : [],
     isActive: isActive !== false,
     sortOrder: Number(sortOrder) || 0,
+    maxGuests: Number(maxGuests) || 8,
   });
 
   if (!tour) {
