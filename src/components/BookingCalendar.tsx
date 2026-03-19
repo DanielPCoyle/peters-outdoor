@@ -12,6 +12,7 @@ interface BookingCalendarProps {
 }
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAYS_SHORT = ["S", "M", "T", "W", "T", "F", "S"];
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -79,9 +80,9 @@ export default function BookingCalendar({ selected, onSelect, availableDates, in
   while (cells.length % 7 !== 0) cells.push(null);
 
   return (
-    <div className="bg-white rounded-2xl border border-sage-muted/20 p-5">
+    <div className="bg-white rounded-2xl border border-sage-muted/20 p-3 sm:p-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
         <button
           onClick={prevMonth}
           disabled={!canGoPrev()}
@@ -108,9 +109,10 @@ export default function BookingCalendar({ selected, onSelect, availableDates, in
 
       {/* Day labels */}
       <div className="grid grid-cols-7 mb-1">
-        {DAYS.map((d) => (
+        {DAYS.map((d, i) => (
           <div key={d} className="text-center text-xs font-medium text-warm-gray py-1">
-            {d}
+            <span className="sm:hidden">{DAYS_SHORT[i]}</span>
+            <span className="hidden sm:inline">{d}</span>
           </div>
         ))}
       </div>
@@ -133,7 +135,7 @@ export default function BookingCalendar({ selected, onSelect, availableDates, in
               onClick={() => !disabled && onSelect(new Date(year, month, day))}
               disabled={disabled}
               className={`
-                relative flex flex-col items-center justify-center py-1 rounded-xl transition-all font-medium text-sm
+                relative flex flex-col items-center justify-center py-1.5 sm:py-1 rounded-xl transition-all font-medium text-sm
                 ${past ? "text-warm-gray/40 cursor-not-allowed" : ""}
                 ${noSlotDay ? "text-warm-gray/30 cursor-not-allowed" : ""}
                 ${sel ? "bg-forest text-white" : ""}

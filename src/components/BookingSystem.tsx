@@ -757,14 +757,14 @@ export default function BookingSystem() {
                 Loading tours…
               </div>
             ) : (
-            <div className="relative -mx-4">
+            <div className="relative -mx-1 sm:-mx-4">
               {/* Left arrow */}
               <button
                 onClick={() => tourScrollRef.current?.scrollBy({ left: -200, behavior: "smooth" })}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-sage-muted/30 rounded-full shadow-md transition-colors"
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-sage-muted/30 rounded-full shadow-md transition-colors"
                 aria-label="Scroll left"
               >
-                <svg className="w-4 h-4 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
@@ -772,7 +772,7 @@ export default function BookingSystem() {
               {/* Scroll track */}
               <div
                 ref={tourScrollRef}
-                className="flex gap-3 overflow-x-auto pb-2 px-10 snap-x snap-mandatory scrollbar-hide"
+                className="flex gap-3 overflow-x-auto pb-2 px-8 sm:px-10 snap-x snap-mandatory scrollbar-hide"
               >
                 {tours.map((t) => {
                   const slots = t.timeSlots ?? [];
@@ -783,7 +783,7 @@ export default function BookingSystem() {
                     <div
                       key={t.id}
                       onClick={() => { setSelectedTourId(t.id); setSelectedAddOnIds([]); setSelectedTime(null); setSlotAvailability(null); setIsPrivateCharter(false); }}
-                      className={`relative cursor-pointer rounded-2xl border-2 overflow-hidden transition-all flex-none w-[40%] min-w-[160px] snap-start flex flex-col ${
+                      className={`relative cursor-pointer rounded-2xl border-2 overflow-hidden transition-all flex-none w-[44%] sm:w-[40%] min-w-[150px] snap-start flex flex-col ${
                         selectedTourId === t.id
                           ? "border-forest"
                           : "border-sage-muted/20 hover:border-forest/40"
@@ -841,10 +841,10 @@ export default function BookingSystem() {
               {/* Right arrow */}
               <button
                 onClick={() => tourScrollRef.current?.scrollBy({ left: 200, behavior: "smooth" })}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-sage-muted/30 rounded-full shadow-md transition-colors"
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-sage-muted/30 rounded-full shadow-md transition-colors"
                 aria-label="Scroll right"
               >
-                <svg className="w-4 h-4 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                 </svg>
               </button>
@@ -1086,11 +1086,16 @@ export default function BookingSystem() {
           <button
             onClick={handleProceedToDetails}
             disabled={!canProceedToDetails}
-            className="w-full py-3.5 rounded-full bg-gold text-forest font-bold text-sm hover:bg-gold-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full py-3.5 rounded-full bg-gold text-forest font-bold text-sm hover:bg-gold-light transition-colors disabled:opacity-40 disabled:cursor-not-allowed leading-snug"
           >
-            {canProceedToDetails
-              ? `Continue — ${formatDate(selectedDate!)}${selectedTime ? ` at ${formatTime12h(selectedTime)}` : ""} · ${isPrivateCharter ? "Private Charter" : `${guests} guest${guests > 1 ? "s" : ""}`}`
-              : hasTimeSlots && selectedDate && availableTimes.length > 0 && !selectedTime
+            {canProceedToDetails ? (
+              <span className="flex flex-col items-center gap-0.5">
+                <span>Continue to Your Info</span>
+                <span className="font-normal text-forest/70 text-xs">
+                  {formatDate(selectedDate!)}{selectedTime ? ` · ${formatTime12h(selectedTime)}` : ""} · {isPrivateCharter ? "Private Charter" : `${guests} guest${guests > 1 ? "s" : ""}`}
+                </span>
+              </span>
+            ) : hasTimeSlots && selectedDate && availableTimes.length > 0 && !selectedTime
               ? "Select a departure time to continue"
               : "Select a tour and date to continue"}
           </button>
@@ -1101,14 +1106,15 @@ export default function BookingSystem() {
       {step === "details" && (
         <div className="space-y-5">
           <div className="bg-forest/5 rounded-2xl p-4 border border-forest/10 text-sm">
-            <div className="flex justify-between items-center">
-              <span className="text-warm-gray">
-                {tour?.name} · {selectedDate && formatDate(selectedDate)}{selectedTime ? ` at ${formatTime12h(selectedTime)}` : ""} ·{" "}
-                {isPrivateCharter ? "Private Charter" : `${guests} guest${guests > 1 ? "s" : ""}`}
-              </span>
-              <button onClick={() => goToStep("select")} className="text-forest underline text-xs">Edit</button>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1 text-warm-gray space-y-0.5">
+                <p className="font-medium text-forest truncate">{tour?.name}</p>
+                <p className="text-xs">{selectedDate && formatDate(selectedDate)}{selectedTime ? ` at ${formatTime12h(selectedTime)}` : ""}</p>
+                <p className="text-xs">{isPrivateCharter ? "Private Charter" : `${guests} guest${guests > 1 ? "s" : ""}`}</p>
+              </div>
+              <button onClick={() => goToStep("select")} className="shrink-0 text-forest underline text-xs mt-0.5">Edit</button>
             </div>
-            <p className="text-forest font-bold mt-1">${total.toFixed(2)} total</p>
+            <p className="text-forest font-bold mt-2">${total.toFixed(2)} total</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1191,14 +1197,14 @@ export default function BookingSystem() {
         <div className="space-y-5">
           {/* Order summary */}
           <div className="bg-forest/5 rounded-2xl p-4 border border-forest/10 text-sm space-y-1">
-            <div className="flex justify-between">
-              <div>
-                <p className="text-forest font-semibold">{tour?.name}</p>
-                <p className="text-warm-gray">
+            <div className="flex justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-forest font-semibold truncate">{tour?.name}</p>
+                <p className="text-warm-gray text-xs">
                   {selectedDate && formatDate(selectedDate)}{selectedTime ? ` at ${formatTime12h(selectedTime)}` : ""} ·{" "}
                   {isPrivateCharter ? "Private Charter" : `${guests} guest${guests > 1 ? "s" : ""}`}
                 </p>
-                <p className="text-warm-gray">{details.name} · {details.email}</p>
+                <p className="text-warm-gray text-xs truncate">{details.name} · {details.email}</p>
               </div>
               <div className="text-right shrink-0">
                 {discount > 0 && (

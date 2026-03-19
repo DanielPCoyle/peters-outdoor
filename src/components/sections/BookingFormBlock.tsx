@@ -47,8 +47,8 @@ export default function BookingFormBlock({
   sidebarPhone = "410-357-1025",
 }: BookingFormBlockProps) {
   return (
-    <section className="py-16 bg-cream">
-      <div className="max-w-7xl mx-auto px-6">
+    <section className="py-12 sm:py-16 bg-cream">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {(sectionTitle || sectionSubtitle) && (
           <div className="mb-10 text-center">
             {sectionTitle && (
