@@ -757,11 +757,11 @@ export default function BookingSystem() {
                 Loading tours…
               </div>
             ) : (
-            <div className="relative -mx-1 sm:-mx-4">
+            <div className="relative -mx-4 sm:-mx-6 lg:mx-0">
               {/* Left arrow */}
               <button
                 onClick={() => tourScrollRef.current?.scrollBy({ left: -200, behavior: "smooth" })}
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-sage-muted/30 rounded-full shadow-md transition-colors"
+                className="absolute left-2 sm:left-3 lg:left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-sage-muted/30 rounded-full shadow-md transition-colors"
                 aria-label="Scroll left"
               >
                 <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -772,7 +772,7 @@ export default function BookingSystem() {
               {/* Scroll track */}
               <div
                 ref={tourScrollRef}
-                className="flex gap-3 overflow-x-auto pb-2 px-8 sm:px-10 snap-x snap-mandatory scrollbar-hide"
+                className="flex gap-3 overflow-x-auto pb-2 px-10 sm:px-12 lg:px-10 snap-x snap-mandatory scrollbar-hide"
               >
                 {tours.map((t) => {
                   const slots = t.timeSlots ?? [];
@@ -783,7 +783,7 @@ export default function BookingSystem() {
                     <div
                       key={t.id}
                       onClick={() => { setSelectedTourId(t.id); setSelectedAddOnIds([]); setSelectedTime(null); setSlotAvailability(null); setIsPrivateCharter(false); }}
-                      className={`relative cursor-pointer rounded-2xl border-2 overflow-hidden transition-all flex-none w-[44%] sm:w-[40%] min-w-[150px] snap-start flex flex-col ${
+                      className={`relative cursor-pointer rounded-2xl border-2 overflow-hidden transition-all flex-none w-[44%] sm:w-[40%] lg:w-[38%] min-w-[150px] snap-start flex flex-col ${
                         selectedTourId === t.id
                           ? "border-forest"
                           : "border-sage-muted/20 hover:border-forest/40"
@@ -841,7 +841,7 @@ export default function BookingSystem() {
               {/* Right arrow */}
               <button
                 onClick={() => tourScrollRef.current?.scrollBy({ left: 200, behavior: "smooth" })}
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-sage-muted/30 rounded-full shadow-md transition-colors"
+                className="absolute right-2 sm:right-3 lg:right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-sage-muted/30 rounded-full shadow-md transition-colors"
                 aria-label="Scroll right"
               >
                 <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
