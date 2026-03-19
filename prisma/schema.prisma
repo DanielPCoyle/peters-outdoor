@@ -80,6 +80,35 @@ model Waiver {
   @@map("waivers")
 }
 
+model NewsletterSubscriber {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("newsletter_subscribers")
+}
+
+model PrivateTour {
+  id                    String    @id @default(uuid())
+  slug                  String    @unique
+  title                 String
+  description           String    @default("")
+  date                  String
+  time                  String?
+  guests                Int       @default(1)
+  price                 Decimal   @db.Decimal(10, 2)
+  location              String?
+  notes                 String?
+  clientName            String    @map("client_name")
+  clientEmail           String    @map("client_email")
+  status                String    @default("pending")
+  stripePaymentIntentId String?   @map("stripe_payment_intent_id")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  @@map("private_tours")
+}
+
 model Settings {
   key   String @id
   value String

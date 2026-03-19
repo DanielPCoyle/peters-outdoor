@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { emailWrapper, detailCard, detailRow, sectionHeading, para } from "@/lib/emailTemplate";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: NextRequest) {
   const { email } = await req.json();
@@ -8,6 +9,15 @@ export async function POST(req: NextRequest) {
   if (!email || !email.includes("@")) {
     return NextResponse.json({ error: "Valid email required." }, { status: 400 });
   }
+
+  // Persist to DB (upsert so duplicates are silently ignored)
+  try {
+    await prisma.newsletterSubscriber.upsert({
+      where: { email },
+      update: {},
+      create: { email },
+    });
+  } catch { /* non-fatal */ }
 
   if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.includes("your_api_key")) {
     console.log("Newsletter signup (Resend not configured):", email);
