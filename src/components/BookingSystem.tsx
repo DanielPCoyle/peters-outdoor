@@ -757,7 +757,7 @@ export default function BookingSystem() {
                 Loading tours…
               </div>
             ) : (
-            <div className="relative -mx-4 sm:-mx-6 lg:mx-0">
+            <div className="relative overflow-hidden -mx-4 sm:-mx-6 lg:mx-0">
               {/* Left arrow */}
               <button
                 onClick={() => tourScrollRef.current?.scrollBy({ left: -200, behavior: "smooth" })}
