@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { Tour } from "@/lib/tourStore";
+import MediaPicker from "@/components/admin/MediaPicker";
 
 type TourWithCount = Tour & { addOnCount?: number };
 
@@ -166,8 +167,12 @@ export default function ToursManager() {
               <input value={createForm.duration} onChange={(e) => setField("duration", e.target.value)} placeholder="2–3 hours" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest/30" />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Image URL *</label>
-              <input value={createForm.imageUrl} onChange={(e) => setField("imageUrl", e.target.value)} placeholder="https://..." className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest/30" />
+              <MediaPicker
+                label="Image"
+                required
+                value={createForm.imageUrl}
+                onChange={(url) => setField("imageUrl", url)}
+              />
             </div>
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Wildlife <span className="text-gray-400 font-normal">(comma-separated)</span></label>

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import type { Tour } from "@/lib/tourStore";
 import type { AddOn } from "@/lib/addOnStore";
 import TourTimeSlotsPanel from "@/components/admin/TourTimeSlotsPanel";
+import MediaPicker from "@/components/admin/MediaPicker";
 
 // ─── Form helpers ──────────────────────────────────────────────────────────
 
@@ -149,12 +150,11 @@ function DetailsTab({ tour, onSaved }: { tour: Tour; onSaved: (updated: Tour) =>
           />
         </div>
         <div className="sm:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Image URL *</label>
-          <input
+          <MediaPicker
+            label="Image"
+            required
             value={form.imageUrl}
-            onChange={(e) => set("imageUrl", e.target.value)}
-            placeholder="https://..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest/30"
+            onChange={(url) => set("imageUrl", url)}
           />
         </div>
         <div className="sm:col-span-2">
