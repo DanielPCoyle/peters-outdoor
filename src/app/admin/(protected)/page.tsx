@@ -2,6 +2,7 @@ import { getAllRequests } from "@/lib/giftCertStore";
 import Link from "next/link";
 import BookingCalendarWidget from "@/components/admin/BookingCalendarWidget";
 import Stripe from "stripe";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -41,23 +42,37 @@ async function getMonthlyRevenue() {
   return { ordersRevenue, addOnsRevenue, orderCount };
 }
 
+async function getPrivateTourRevenue(startOfMonth: Date) {
+  const paid = await prisma.privateTour.findMany({
+    where: { status: "paid", updatedAt: { gte: startOfMonth } },
+    select: { price: true },
+  });
+  return {
+    privateTourRevenue: paid.reduce((s, t) => s + Number(t.price), 0),
+    privateTourCount: paid.length,
+  };
+}
+
 export default async function AdminDashboard() {
-  const [requests, monthlyRevenue] = await Promise.all([
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const [requests, monthlyRevenue, privateTours] = await Promise.all([
     getAllRequests(),
     getMonthlyRevenue(),
+    getPrivateTourRevenue(startOfMonth),
   ]);
   const active          = requests.filter((r) => r.status === "active");
   const pendingPayment  = requests.filter((r) => r.status === "pending_payment");
   const redeemed        = requests.filter((r) => r.status === "redeemed");
   const activeRevenue = active.reduce((s, r) => s + r.amount, 0);
 
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthlyGiftCertRevenue = requests
     .filter((r) => r.status !== "pending_payment" && new Date(r.createdAt) >= startOfMonth)
     .reduce((s, r) => s + r.amount, 0);
   const { ordersRevenue, addOnsRevenue, orderCount } = monthlyRevenue;
-  const monthlyTotal = ordersRevenue + monthlyGiftCertRevenue;
+  const { privateTourRevenue, privateTourCount } = privateTours;
+  const monthlyTotal = ordersRevenue + monthlyGiftCertRevenue + privateTourRevenue;
 
   return (
     <div className="p-6 lg:p-10 max-w-6xl">
@@ -97,7 +112,7 @@ export default async function AdminDashboard() {
             View orders →
           </Link>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <RevenueCard
             label="Total"
             amount={monthlyTotal}
@@ -110,6 +125,12 @@ export default async function AdminDashboard() {
             amount={ordersRevenue}
             sub={`${orderCount} booking${orderCount !== 1 ? "s" : ""}`}
             accent="sage"
+          />
+          <RevenueCard
+            label="Private Tours"
+            amount={privateTourRevenue}
+            sub={`${privateTourCount} paid`}
+            accent="gold"
           />
           <RevenueCard
             label="Gift Certificates"
