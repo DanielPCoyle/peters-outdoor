@@ -5,6 +5,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { getRequestByCode, atomicRedeem } from "@/lib/giftCertStore";
+import {
+  emailWrapper, detailCard, detailRow, sectionHeading,
+  para, signature, ctaButton, qrCodeBlock, siteUrl,
+} from "@/lib/emailTemplate";
+import { generateCheckinToken } from "@/lib/checkinToken";
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -26,21 +31,50 @@ export async function POST(req: NextRequest) {
 
   if (process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.includes("your_api_key")) {
     const resend = new Resend(process.env.RESEND_API_KEY);
+
+    const formattedDate = new Date(date).toLocaleDateString("en-US", {
+      weekday: "long", year: "numeric", month: "long", day: "numeric",
+    });
+
+    const rows = [
+      detailRow("Tour", tourName),
+      detailRow("Date", formattedDate),
+      detailRow("Guests", String(guests)),
+      detailRow(
+        "Payment",
+        `<span style="color:#C9A84C;">Gift Certificate ${redeemed.certificateCode}</span>`,
+        true
+      ),
+    ].join("");
+
+    // QR code for admin check-in using cert code
+    const certCode = redeemed.certificateCode!;
+    const checkinToken = await generateCheckinToken(certCode);
+    const checkinUrl = `${siteUrl()}/admin/checkin?cert=${certCode}&token=${checkinToken}`;
+
+    const emailBody = `
+      ${para(`Hi <strong style="color:#2D5016;">${name}</strong>, your booking is confirmed! Your gift certificate covered the full amount — no payment needed. Here's your reservation summary.`)}
+      ${detailCard(rows)}
+      ${sectionHeading("What to Bring")}
+      <ul style="margin:0 0 24px;padding-left:20px;color:#4a5568;font-size:14px;line-height:2.2;font-family:Arial,sans-serif;">
+        <li>Water and snacks</li>
+        <li>Sunscreen and a hat</li>
+        <li>Camera or phone in a waterproof case</li>
+        <li>Light layers (weather can change)</li>
+        <li>Closed-toe shoes that can get wet</li>
+      </ul>
+      ${ctaButton("Browse More Tours", `${siteUrl()}/tours`)}
+      ${para("We'll be in touch closer to your tour date with meeting location details and any weather updates. Questions? Reply to this email or call <a href=\"tel:410-357-1025\" style=\"color:#2D5016;\">410-357-1025</a>.")}
+      ${qrCodeBlock(checkinUrl, certCode)}
+      ${signature}
+    `;
+
     await resend.emails.send({
-      from: "W.H. Peters Outdoor Adventures <bookings@petersoutdoor.com>",
+      from: "W.H. Peters Outdoor Adventures <noreply@simplerdevelopment.com>",
       to: email,
       replyTo: "info@petersoutdoor.com",
       subject: `Booking Confirmed — ${tourName}`,
-      html: `
-        <p>Hi ${name},</p>
-        <p>Your booking is confirmed! We used your gift certificate (${redeemed.certificateCode}) for the full amount.</p>
-        <p><strong>Tour:</strong> ${tourName}<br/>
-        <strong>Date:</strong> ${date}<br/>
-        <strong>Guests:</strong> ${guests}<br/>
-        <strong>Paid with:</strong> Gift Certificate ${redeemed.certificateCode}</p>
-        <p>Questions? Reply to this email or contact us at info@petersoutdoor.com</p>
-        <p>See you on the water!<br/>W.H. Peters Outdoor Adventures</p>
-      `,
+      html: emailWrapper("You're Booked!", emailBody),
     }).catch(console.error);
   }
 

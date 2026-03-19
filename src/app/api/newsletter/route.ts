@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { emailWrapper, detailCard, detailRow, sectionHeading, para } from "@/lib/emailTemplate";
 
 export async function POST(req: NextRequest) {
   const { email } = await req.json();
@@ -15,12 +16,18 @@ export async function POST(req: NextRequest) {
 
   const resend = new Resend(process.env.RESEND_API_KEY);
 
-  // Notify the business
+  const body = `
+    ${para("A new visitor has subscribed to the W.H. Peters Outdoor Adventures newsletter.")}
+    ${detailCard(detailRow("Email Address", email, true))}
+    ${sectionHeading("Next Steps")}
+    ${para("Add this subscriber to your mailing list and send them upcoming tour announcements, seasonal promotions, and nature guides.")}
+  `;
+
   await resend.emails.send({
-    from: "W.H. Peters Outdoor Adventures <bookings@petersoutdoor.com>",
+    from: "W.H. Peters Outdoor Adventures <noreply@simplerdevelopment.com>",
     to: "info@petersoutdoor.com",
-    subject: `New Newsletter Signup — ${email}`,
-    html: `<p>New newsletter subscriber: <strong>${email}</strong></p>`,
+    subject: `New Newsletter Subscriber — ${email}`,
+    html: emailWrapper("New Subscriber", body),
   });
 
   return NextResponse.json({ success: true });

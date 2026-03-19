@@ -9,7 +9,7 @@ import {
 
 interface BookingCheckoutProps {
   totalAmount: number;
-  onSuccess: () => void;
+  onSuccess: (paymentIntentId?: string) => void;
   onBack: () => void;
 }
 
@@ -33,16 +33,16 @@ export default function BookingCheckout({ totalAmount, onSuccess, onBack }: Book
       return;
     }
 
-    const { error: confirmError } = await stripe.confirmPayment({
+    const result = await stripe.confirmPayment({
       elements,
       redirect: "if_required",
     });
 
-    if (confirmError) {
-      setError(confirmError.message ?? "Payment failed.");
+    if (result.error) {
+      setError(result.error.message ?? "Payment failed.");
       setProcessing(false);
     } else {
-      onSuccess();
+      onSuccess(result.paymentIntent?.id);
     }
   };
 

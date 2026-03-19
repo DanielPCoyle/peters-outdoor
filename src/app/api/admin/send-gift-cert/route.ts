@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { getRequestById } from "@/lib/giftCertStore";
+import { emailWrapper, certBadge, para, sectionHeading, signature, siteUrl } from "@/lib/emailTemplate";
 
 export async function POST(req: NextRequest) {
   const { id } = await req.json();
@@ -22,12 +23,30 @@ export async function POST(req: NextRequest) {
   }
 
   const resend = new Resend(process.env.RESEND_API_KEY);
+
+  const messageBlock = record.message
+    ? `<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;border-left:4px solid #C9A84C;border-radius:0 8px 8px 0;margin-bottom:28px;"><tr><td style="padding:16px 20px;"><p style="margin:0 0 4px;color:#C9A84C;font-size:11px;font-family:Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;">A message for you</p><p style="margin:0;color:#4a5568;font-size:15px;font-style:italic;line-height:1.6;">"${record.message}"</p></td></tr></table>`
+    : "";
+
+  const emailBody = `
+    ${para(`Hi <strong style="color:#2D5016;">${record.yourName}</strong>, as requested, here is your gift certificate. Forward it to your recipient so they can book their adventure!`)}
+    ${certBadge(record.certificateCode, record.amount)}
+    ${messageBlock}
+    ${sectionHeading("How to Redeem")}
+    <ol style="margin:0 0 24px;padding-left:20px;color:#4a5568;font-size:14px;line-height:2.2;font-family:Arial,sans-serif;">
+      <li>Browse tours at <a href="${siteUrl()}/tours" style="color:#2D5016;">${siteUrl()}/tours</a></li>
+      <li>Call <a href="tel:410-357-1025" style="color:#2D5016;">410-357-1025</a> or email <a href="mailto:info@petersoutdoor.com" style="color:#2D5016;">info@petersoutdoor.com</a></li>
+      <li>Mention certificate code <strong>${record.certificateCode}</strong> when booking</li>
+    </ol>
+    ${signature}
+  `;
+
   await resend.emails.send({
-    from: "W.H. Peters Outdoor Adventures <bookings@petersoutdoor.com>",
+    from: "W.H. Peters Outdoor Adventures <noreply@simplerdevelopment.com>",
     to: record.yourEmail,
     replyTo: "info@petersoutdoor.com",
     subject: `Your Gift Certificate (Resent) — ${record.certificateCode}`,
-    html: `<p>Hi ${record.yourName},</p><p>Here is your gift certificate code as requested: <strong>${record.certificateCode}</strong></p><p>Amount: $${record.amount}</p><p>Please contact us at info@petersoutdoor.com to book your tour.</p>`,
+    html: emailWrapper("Gift Certificate", emailBody),
   });
 
   return NextResponse.json({ success: true });

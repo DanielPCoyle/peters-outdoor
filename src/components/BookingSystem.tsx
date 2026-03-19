@@ -317,7 +317,7 @@ export default function BookingSystem() {
     }
   };
 
-  const handlePaymentSuccess = async () => {
+  const handlePaymentSuccess = async (stripePaymentIntentId?: string) => {
     window.scrollTo({ top: 0, behavior: "smooth" });
     goToStep("confirmation");
     // Redeem gift cert if one was applied (partial coverage paid via Stripe)
@@ -337,6 +337,7 @@ export default function BookingSystem() {
         date: selectedDate?.toISOString().split("T")[0],
         guests: isPrivateCharter ? `Private Charter (up to ${MAX_GUESTS})` : guests,
         total,
+        stripePaymentIntentId,
         ...details,
       }),
     }).catch(console.error);
