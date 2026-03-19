@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "cdn.builder.io",
       },
+      {
+        protocol: "https",
+        hostname: "cwanghowygxjknueyeqp.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
     ],
   },
 };
