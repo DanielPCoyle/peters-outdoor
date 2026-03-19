@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import Pagination from "./Pagination";
 
 const WaiverContentEditor = dynamic(() => import("./WaiverContentEditor"), { ssr: false });
+
+const PAGE_SIZE = 25;
 
 interface Waiver {
   id: string;
@@ -22,6 +25,7 @@ export default function WaiversManager() {
   const [waivers, setWaivers] = useState<Waiver[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [copied, setCopied] = useState(false);
   const [editingContent, setEditingContent] = useState(false);
 
@@ -43,6 +47,8 @@ export default function WaiversManager() {
     w.email?.toLowerCase().includes(search.toLowerCase()) ||
     w.tourDate?.includes(search)
   );
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const todayStr = new Date().toISOString().split("T")[0];
   const todayCount = waivers.filter((w) => w.tourDate === todayStr || w.createdAt.startsWith(todayStr)).length;
@@ -141,7 +147,7 @@ export default function WaiversManager() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search by name, email, or tour date…"
             className="flex-1 text-sm text-forest placeholder-gray-400 focus:outline-none"
           />
@@ -159,32 +165,35 @@ export default function WaiversManager() {
             {search ? "No waivers match your search." : "No waivers signed yet."}
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
-            {filtered.map((w) => (
-              <div key={w.id} className="flex items-center gap-4 px-5 py-4">
-                <div className="w-9 h-9 bg-forest/10 rounded-full flex items-center justify-center shrink-0">
-                  <span className="text-forest font-bold text-sm">
-                    {w.fullName.trim().charAt(0).toUpperCase()}
-                  </span>
+          <>
+            <div className="divide-y divide-gray-100">
+              {paginated.map((w) => (
+                <div key={w.id} className="flex items-center gap-4 px-5 py-4">
+                  <div className="w-9 h-9 bg-forest/10 rounded-full flex items-center justify-center shrink-0">
+                    <span className="text-forest font-bold text-sm">
+                      {w.fullName.trim().charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-forest text-sm">{w.fullName}</p>
+                    <p className="text-xs text-warm-gray truncate">
+                      {w.email ?? "No email"}
+                      {w.tourDate && ` · Tour: ${new Date(w.tourDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-xs text-warm-gray">
+                      {new Date(w.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </p>
+                    <p className="text-xs text-warm-gray">
+                      {new Date(w.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-forest text-sm">{w.fullName}</p>
-                  <p className="text-xs text-warm-gray truncate">
-                    {w.email ?? "No email"}
-                    {w.tourDate && ` · Tour: ${new Date(w.tourDate + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
-                  </p>
-                </div>
-                <div className="shrink-0 text-right">
-                  <p className="text-xs text-warm-gray">
-                    {new Date(w.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                  </p>
-                  <p className="text-xs text-warm-gray">
-                    {new Date(w.createdAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <Pagination page={page} totalPages={totalPages} totalItems={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
+          </>
         )}
       </div>
     </div>

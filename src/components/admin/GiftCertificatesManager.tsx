@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import Pagination from "./Pagination";
+
+const PAGE_SIZE = 20;
 import {
   ResponsiveContainer,
   LineChart,
@@ -176,6 +179,7 @@ export default function GiftCertificatesManager() {
   const [requests, setRequests] = useState<GiftCertRequest[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
   const [dateRange, setDateRange] = useState<DateRange>("30d");
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
@@ -237,6 +241,8 @@ export default function GiftCertificatesManager() {
   const outstandingCount = requests.filter((r) => r.status === "active").length;
 
   const filtered = filter === "all" ? requests : requests.filter((r) => r.status === filter);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const counts = {
     all:             requests.length,
     pending_payment: requests.filter((r) => r.status === "pending_payment").length,
@@ -286,7 +292,7 @@ export default function GiftCertificatesManager() {
         {filters.map(({ key, label }) => (
           <button
             key={key}
-            onClick={() => setFilter(key)}
+            onClick={() => { setFilter(key); setPage(1); }}
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${filter === key ? "bg-white text-forest shadow-sm" : "text-warm-gray hover:text-forest"}`}
           >
             {label}
@@ -312,17 +318,20 @@ export default function GiftCertificatesManager() {
           No {filter === "all" ? "" : filter.replace("_", " ")} certificates found.
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((req) => (
-            <RequestCard
-              key={req.id}
-              req={req}
-              actionId={actionId}
-              onResend={resendCertificate}
-              onRedeem={markRedeemed}
-            />
-          ))}
-        </div>
+        <>
+          <div className="space-y-3">
+            {paginated.map((req) => (
+              <RequestCard
+                key={req.id}
+                req={req}
+                actionId={actionId}
+                onResend={resendCertificate}
+                onRedeem={markRedeemed}
+              />
+            ))}
+          </div>
+          <Pagination page={page} totalPages={totalPages} totalItems={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
+        </>
       )}
     </div>
   );

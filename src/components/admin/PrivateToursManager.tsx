@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Pagination from "./Pagination";
+
+const PAGE_SIZE = 20;
 
 interface PrivateTour {
   id: string;
@@ -60,6 +63,7 @@ export default function PrivateToursManager() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetch("/api/admin/private-tours")
@@ -121,6 +125,9 @@ export default function PrivateToursManager() {
     setCopiedSlug(slug);
     setTimeout(() => setCopiedSlug(null), 2000);
   };
+
+  const totalPages = Math.ceil(tours.length / PAGE_SIZE);
+  const paginated = tours.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const pendingCount = tours.filter((t) => t.status === "pending").length;
   const paidCount = tours.filter((t) => t.status === "paid").length;
@@ -297,8 +304,9 @@ export default function PrivateToursManager() {
             No private tours yet. Create one to generate a shareable payment link.
           </div>
         ) : (
+          <>
           <div className="divide-y divide-gray-100">
-            {tours.map((tour) => {
+            {paginated.map((tour) => {
               const bookingUrl = typeof window !== "undefined" ? `${window.location.origin}/book/${tour.slug}` : `/book/${tour.slug}`;
               const isExpanded = expandedId === tour.id;
               return (
@@ -414,6 +422,8 @@ export default function PrivateToursManager() {
               );
             })}
           </div>
+          <Pagination page={page} totalPages={totalPages} totalItems={tours.length} pageSize={PAGE_SIZE} onChange={setPage} />
+          </>
         )}
       </div>
     </div>

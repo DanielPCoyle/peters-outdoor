@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Pagination from "./Pagination";
+
+const PAGE_SIZE = 25;
 
 interface Subscriber {
   id: string;
@@ -12,6 +15,7 @@ export default function NewsletterManager() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
@@ -58,6 +62,8 @@ export default function NewsletterManager() {
   const filtered = subscribers.filter((s) =>
     s.email.toLowerCase().includes(search.toLowerCase())
   );
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const thisMonth = subscribers.filter((s) =>
     s.createdAt.startsWith(new Date().toISOString().slice(0, 7))
@@ -93,7 +99,7 @@ export default function NewsletterManager() {
           </svg>
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search by email…"
             className="flex-1 text-sm text-forest placeholder-gray-400 focus:outline-none"
           />
@@ -121,31 +127,34 @@ export default function NewsletterManager() {
             {search ? "No subscribers match your search." : "No subscribers yet."}
           </div>
         ) : (
-          <div className="divide-y divide-gray-100">
-            {filtered.map((s) => (
-              <div key={s.id} className="flex items-center gap-4 px-5 py-3.5">
-                <div className="w-8 h-8 bg-forest/10 rounded-full flex items-center justify-center shrink-0">
-                  <svg className="w-4 h-4 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
+          <>
+            <div className="divide-y divide-gray-100">
+              {paginated.map((s) => (
+                <div key={s.id} className="flex items-center gap-4 px-5 py-3.5">
+                  <div className="w-8 h-8 bg-forest/10 rounded-full flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <p className="flex-1 text-sm text-forest font-medium">{s.email}</p>
+                  <p className="text-xs text-warm-gray shrink-0">
+                    {new Date(s.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </p>
+                  <button
+                    onClick={() => handleDelete(s.id)}
+                    disabled={deletingId === s.id}
+                    className="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-40 ml-2"
+                    title="Remove subscriber"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
                 </div>
-                <p className="flex-1 text-sm text-forest font-medium">{s.email}</p>
-                <p className="text-xs text-warm-gray shrink-0">
-                  {new Date(s.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                </p>
-                <button
-                  onClick={() => handleDelete(s.id)}
-                  disabled={deletingId === s.id}
-                  className="text-gray-300 hover:text-red-500 transition-colors disabled:opacity-40 ml-2"
-                  title="Remove subscriber"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <Pagination page={page} totalPages={totalPages} totalItems={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
+          </>
         )}
       </div>
     </div>

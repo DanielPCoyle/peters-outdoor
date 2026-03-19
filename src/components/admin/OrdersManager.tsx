@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
+import Pagination from "./Pagination";
+
+const PAGE_SIZE = 20;
 import {
   ResponsiveContainer,
   LineChart,
@@ -93,6 +96,7 @@ export default function OrdersManager() {
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   const [tourFilter, setTourFilter] = useState<TourFilter>("all");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -134,6 +138,8 @@ export default function OrdersManager() {
   const avgOrderValue = totalOrders ? totalRevenue / totalOrders : 0;
 
   const chartData = useMemo(() => buildChartData(filtered, dateRange), [filtered, dateRange]);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const metrics = [
     { label: "Revenue",      value: `$${totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
@@ -149,7 +155,7 @@ export default function OrdersManager() {
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-semibold text-warm-gray uppercase tracking-wider">Period:</span>
           {DATE_RANGE_OPTIONS.map(({ key, label }) => (
-            <button key={key} onClick={() => setDateRange(key)}
+            <button key={key} onClick={() => { setDateRange(key); setPage(1); }}
               className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${dateRange === key ? "bg-forest text-white" : "bg-gray-100 text-warm-gray hover:bg-gray-200"}`}>
               {label}
             </button>
@@ -160,7 +166,7 @@ export default function OrdersManager() {
             <span className="text-xs font-semibold text-warm-gray uppercase tracking-wider">Tour:</span>
             <select
               value={tourFilter}
-              onChange={(e) => setTourFilter(e.target.value)}
+              onChange={(e) => { setTourFilter(e.target.value); setPage(1); }}
               className="text-sm font-medium text-forest bg-white border border-gray-200 rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-forest/30"
             >
               <option value="all">All Tours</option>
@@ -226,8 +232,9 @@ export default function OrdersManager() {
           No orders found for this period.
         </div>
       ) : (
+        <>
         <div className="space-y-3">
-          {filtered.map((order) => (
+          {paginated.map((order) => (
             <div key={order.id} className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
               <div
                 className="flex items-center gap-4 p-4 cursor-pointer hover:bg-gray-50 transition-colors"
@@ -315,6 +322,8 @@ export default function OrdersManager() {
             </div>
           ))}
         </div>
+        <Pagination page={page} totalPages={totalPages} totalItems={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
+        </>
       )}
     </div>
   );
