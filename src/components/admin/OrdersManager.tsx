@@ -22,6 +22,7 @@ interface Order {
   date: string;
   guests: string;
   isPrivateCharter: boolean;
+  isPrivateTour: boolean;
   customerName: string;
   email: string;
   phone: string;
@@ -252,6 +253,9 @@ export default function OrdersManager() {
                     {order.isPrivateCharter && (
                       <span className="text-xs bg-gold/20 text-yellow-700 font-semibold px-2 py-0.5 rounded-full">Private Charter</span>
                     )}
+                    {order.isPrivateTour && (
+                      <span className="text-xs bg-forest/10 text-forest font-semibold px-2 py-0.5 rounded-full">Private Tour</span>
+                    )}
                   </div>
                   <p className="text-xs text-warm-gray">{order.tourName}</p>
                   <p className="text-xs text-warm-gray mt-0.5">
@@ -299,7 +303,11 @@ export default function OrdersManager() {
                   </div>
                   <div>
                     <p className="text-xs font-semibold text-warm-gray uppercase tracking-wider mb-1">Guests</p>
-                    <p className="text-forest">{order.isPrivateCharter ? `Private Charter (up to 8)` : `${order.guests} guest${Number(order.guests) !== 1 ? "s" : ""}`}</p>
+                    <p className="text-forest">
+                      {order.isPrivateCharter
+                        ? "Private Charter (up to 8)"
+                        : `${order.guests} guest${Number(order.guests) !== 1 ? "s" : ""}`}
+                    </p>
                   </div>
                   {order.notes && (
                     <div className="sm:col-span-2">
