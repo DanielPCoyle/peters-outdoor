@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Pagination from "./Pagination";
+import RefundModal from "./RefundModal";
 
 const PAGE_SIZE = 20;
 import {
@@ -98,6 +99,13 @@ export default function OrdersManager() {
   const [tourFilter, setTourFilter] = useState<TourFilter>("all");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [refundTarget, setRefundTarget] = useState<{ id: string; amount: number; label: string } | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+
+  const showToast = (msg: string, type: "success" | "error") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -151,6 +159,27 @@ export default function OrdersManager() {
 
   return (
     <div>
+      {/* Refund modal */}
+      {refundTarget && (
+        <RefundModal
+          paymentIntentId={refundTarget.id}
+          originalAmount={refundTarget.amount}
+          label={refundTarget.label}
+          onSuccess={(refunded) => {
+            setRefundTarget(null);
+            showToast(`Refund of $${refunded.toFixed(2)} issued successfully.`, "success");
+          }}
+          onClose={() => setRefundTarget(null)}
+        />
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-medium text-white ${toast.type === "success" ? "bg-forest" : "bg-red-600"}`}>
+          {toast.msg}
+        </div>
+      )}
+
       {/* Date + Tour filters */}
       <div className="flex flex-wrap items-center gap-4 mb-6">
         <div className="flex items-center gap-2 flex-wrap">
@@ -267,13 +296,22 @@ export default function OrdersManager() {
                 </div>
 
                 {/* Right badges */}
-                <div className="shrink-0 flex items-center gap-3">
+                <div className="shrink-0 flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-full border bg-green-50 text-green-700 border-green-200">
                     Paid
                   </span>
                   <p className="text-xs text-warm-gray hidden sm:block">
                     Booked {new Date(order.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </p>
+                  <button
+                    onClick={() => setRefundTarget({ id: order.id, amount: order.amount, label: `${order.customerName} — ${order.tourName}` })}
+                    title="Issue refund"
+                    className="p-2 rounded-full border border-gray-200 text-warm-gray hover:text-red-600 hover:border-red-200 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                    </svg>
+                  </button>
                 </div>
 
                 <svg className={`w-4 h-4 text-gray-300 transition-transform shrink-0 ${expanded === order.id ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">

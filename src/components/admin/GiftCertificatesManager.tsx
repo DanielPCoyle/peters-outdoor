@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import Pagination from "./Pagination";
+import RefundModal from "./RefundModal";
 
 const PAGE_SIZE = 20;
 import {
@@ -183,6 +184,7 @@ export default function GiftCertificatesManager() {
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [refundTarget, setRefundTarget] = useState<{ id: string; paymentIntentId: string; amount: number } | null>(null);
 
   const fetchRequests = useCallback(async () => {
     try {
@@ -259,6 +261,20 @@ export default function GiftCertificatesManager() {
 
   return (
     <div>
+      {/* Refund modal */}
+      {refundTarget && (
+        <RefundModal
+          paymentIntentId={refundTarget.paymentIntentId}
+          originalAmount={refundTarget.amount}
+          label={`Gift Certificate — $${refundTarget.amount}`}
+          onSuccess={(refunded) => {
+            setRefundTarget(null);
+            showToast(`Refund of $${refunded.toFixed(2)} issued successfully.`, "success");
+          }}
+          onClose={() => setRefundTarget(null)}
+        />
+      )}
+
       {/* Analytics */}
       <Analytics certs={requests} range={dateRange} onRangeChange={setDateRange} />
 
@@ -327,6 +343,7 @@ export default function GiftCertificatesManager() {
                 actionId={actionId}
                 onResend={resendCertificate}
                 onRedeem={markRedeemed}
+                onRefund={req.stripePaymentIntentId ? () => setRefundTarget({ id: req.id, paymentIntentId: req.stripePaymentIntentId!, amount: req.amount }) : undefined}
               />
             ))}
           </div>
@@ -342,11 +359,13 @@ function RequestCard({
   actionId,
   onResend,
   onRedeem,
+  onRefund,
 }: {
   req: GiftCertRequest;
   actionId: string | null;
   onResend: (id: string) => void;
   onRedeem: (id: string) => void;
+  onRefund?: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const isBusy = actionId === req.id;
@@ -413,6 +432,18 @@ function RequestCard({
                 ) : "Mark Redeemed"}
               </button>
             </>
+          )}
+          {onRefund && req.status !== "pending_payment" && (
+            <button
+              onClick={onRefund}
+              disabled={isBusy}
+              title="Issue refund"
+              className="p-2 rounded-full border border-gray-200 text-warm-gray hover:text-red-600 hover:border-red-200 transition-colors disabled:opacity-50"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+              </svg>
+            </button>
           )}
         </div>
 
