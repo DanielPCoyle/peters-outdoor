@@ -52,6 +52,8 @@ export async function POST(req: NextRequest) {
     maxGuests: Number(maxGuests) || 8,
     privatePartyEnabled: false,
     privatePartyRate: null,
+    location: body.location ?? null,
+    locationUrl: body.locationUrl ?? null,
   });
 
   if (!tour) {

@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
   const body = await req.json();
-  const { tourId, date, time, guests, isPrivateCharter, name, email, phone, notes, giftCertCode, selectedAddOnIds } = body;
+  const { tourId, date, time, guests, isPrivateCharter, name, email, phone, notes, giftCertCode, selectedAddOnIds, pfdSizes, emergencyName, emergencyPhone } = body;
 
   if (!tourId || !date || !guests || !name || !email) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
@@ -76,6 +76,8 @@ export async function POST(req: NextRequest) {
       giftCertDiscount: String(giftCertDiscount),
       addOns: validAddOns.map((a) => a.name).join(", "),
       addOnsTotal: String(addOnsTotal),
+      pfdSizes: Array.isArray(pfdSizes) ? pfdSizes.join(", ") : "",
+      emergencyContact: emergencyName ? `${emergencyName} — ${emergencyPhone ?? ""}` : "",
     },
     description,
   });

@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
 
   const resend = new Resend(process.env.RESEND_API_KEY);
 
-  const { tourId, date, time, guests, name, email, phone, notes, total, addOns, stripePaymentIntentId } = await req.json();
+  const { tourId, date, time, guests, name, email, phone, notes, total, addOns, stripePaymentIntentId, location, locationUrl, pfdSizes, emergencyName, emergencyPhone } = await req.json();
 
   const tourName = TOUR_NAMES[tourId] ?? tourId;
   const formattedDate = new Date(date).toLocaleDateString("en-US", {
@@ -36,12 +36,25 @@ export async function POST(req: NextRequest) {
     return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, "0")} ${p}`;
   }
 
+  const locationHtml = location
+    ? (locationUrl
+        ? `<a href="${locationUrl}" style="color:#2D5016;text-decoration:underline;">${location}</a>`
+        : location)
+    : "";
+
+  const pfdSummary = Array.isArray(pfdSizes) && pfdSizes.length > 0
+    ? pfdSizes.map((s: string, i: number) => `Guest ${i + 1}: ${s}`).join(", ")
+    : "";
+
   const rows = [
     detailRow("Tour", tourName),
     detailRow("Date", formattedDate),
     time ? detailRow("Time", fmt12h(time)) : "",
+    locationHtml ? detailRow("Location", locationHtml) : "",
     detailRow("Guests", String(guests)),
+    pfdSummary ? detailRow("Life Jacket Sizes", pfdSummary) : "",
     phone ? detailRow("Phone", phone) : "",
+    emergencyName ? detailRow("Emergency Contact", `${emergencyName}${emergencyPhone ? ` — ${emergencyPhone}` : ""}`) : "",
     addOns ? detailRow("Add-ons", addOns) : "",
     notes ? detailRow("Notes", notes) : "",
     detailRow("Total Paid", `<span style="color:#C9A84C;font-size:18px;">$${Number(total).toFixed(2)}</span>`, true),
@@ -74,7 +87,9 @@ export async function POST(req: NextRequest) {
       <li>Closed-toe shoes that can get wet</li>
     </ul>
     ${ctaButton("Browse More Tours", `${siteUrl()}/tours`)}
-    ${para("We'll be in touch closer to your tour date with meeting location details and any weather updates. Questions? Just reply to this email or call us at <a href=\"tel:410-357-1025\" style=\"color:#2D5016;\">410-357-1025</a>.")}
+    ${location
+      ? para(`We'll be in touch closer to your tour date with any weather updates. Questions? Just reply to this email or call us at <a href="tel:410-357-1025" style="color:#2D5016;">410-357-1025</a>.`)
+      : para(`We'll be in touch closer to your tour date with meeting location details and any weather updates. Questions? Just reply to this email or call us at <a href="tel:410-357-1025" style="color:#2D5016;">410-357-1025</a>.`)}
     ${qrBlock}
     ${signature}
   `;

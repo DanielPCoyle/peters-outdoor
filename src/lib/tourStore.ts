@@ -29,6 +29,8 @@ export interface Tour {
   maxGuests: number;
   privatePartyEnabled: boolean;
   privatePartyRate: number | null;
+  location: string | null;
+  locationUrl: string | null;
   createdAt: string;
   updatedAt: string;
   addOns?: AddOn[];
@@ -50,6 +52,8 @@ function fromPrisma(t: PrismaTour): Tour {
     maxGuests: t.maxGuests,
     privatePartyEnabled: t.privatePartyEnabled,
     privatePartyRate: t.privatePartyRate !== null ? Number(t.privatePartyRate) : null,
+    location: t.location ?? null,
+    locationUrl: t.locationUrl ?? null,
     createdAt: t.createdAt.toISOString(),
     updatedAt: t.updatedAt.toISOString(),
   };
@@ -106,6 +110,8 @@ export async function createTour(
         isActive: input.isActive,
         sortOrder: input.sortOrder,
         maxGuests: input.maxGuests ?? 8,
+        location: input.location ?? null,
+        locationUrl: input.locationUrl ?? null,
       },
     });
     return fromPrisma(row);
@@ -135,6 +141,8 @@ export async function updateTour(
         ...(input.maxGuests !== undefined && { maxGuests: input.maxGuests }),
         ...(input.privatePartyEnabled !== undefined && { privatePartyEnabled: input.privatePartyEnabled }),
         ...(input.privatePartyRate !== undefined && { privatePartyRate: input.privatePartyRate }),
+        ...(input.location !== undefined && { location: input.location }),
+        ...(input.locationUrl !== undefined && { locationUrl: input.locationUrl }),
       },
     });
     return fromPrisma(row);

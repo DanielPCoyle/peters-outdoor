@@ -62,7 +62,7 @@ export default function BookingFormBlock({
 
         <div className="flex flex-col lg:flex-row gap-10 items-start">
           {/* Booking form */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 w-full lg:w-auto">
             <BookingSystem />
           </div>
 

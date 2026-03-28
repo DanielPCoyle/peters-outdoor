@@ -30,6 +30,10 @@ export async function GET() {
       isActive: t.isActive,
       sortOrder: t.sortOrder,
       maxGuests: t.maxGuests ?? 8,
+      privatePartyEnabled: t.privatePartyEnabled,
+      privatePartyRate: t.privatePartyRate !== null ? Number(t.privatePartyRate) : null,
+      location: t.location ?? null,
+      locationUrl: t.locationUrl ?? null,
       createdAt: t.createdAt.toISOString(),
       updatedAt: t.updatedAt.toISOString(),
       addOns: t.addOns
