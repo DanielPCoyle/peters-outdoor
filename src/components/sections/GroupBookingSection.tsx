@@ -34,7 +34,7 @@ export default function GroupBookingSection({
   sidebar = false,
   eyebrow = "Groups & Corporate",
   title = "Planning a Group Adventure?",
-  description = "Whether it's a corporate outing, family reunion, birthday paddle, or team-building retreat — we'll customize every detail for your group. Private tours, flexible scheduling, and group pricing available for parties of 9 or more.",
+  description = "Whether it's a corporate outing, family reunion, birthday paddle, or team-building retreat — we'll customize every detail for your group. Private tours available for groups up to 8 with flexible scheduling.",
   perks = defaultPerks,
   emailLabel = "Email Us for Group Pricing",
   email = "info@petersoutdoor.com",

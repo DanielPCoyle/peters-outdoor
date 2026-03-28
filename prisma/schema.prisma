@@ -21,6 +21,8 @@ model Tour {
   maxGuests            Int       @default(8) @map("max_guests")
   privatePartyEnabled  Boolean   @default(false) @map("private_party_enabled")
   privatePartyRate     Decimal?  @db.Decimal(10, 2) @map("private_party_rate")
+  location             String?
+  locationUrl          String?   @map("location_url")
   createdAt            DateTime  @default(now()) @map("created_at")
   updatedAt            DateTime  @updatedAt @map("updated_at")
   addOns      TourAddOn[]

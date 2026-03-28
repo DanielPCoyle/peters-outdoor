@@ -22,6 +22,8 @@ const EMPTY_FORM = {
   maxGuests: "8",
   privatePartyEnabled: false,
   privatePartyRate: "",
+  location: "",
+  locationUrl: "",
 };
 
 type FormData = typeof EMPTY_FORM;
@@ -40,6 +42,8 @@ function tourToForm(t: Tour): FormData {
     maxGuests: String(t.maxGuests ?? 8),
     privatePartyEnabled: t.privatePartyEnabled ?? false,
     privatePartyRate: t.privatePartyRate != null ? String(t.privatePartyRate) : "",
+    location: t.location ?? "",
+    locationUrl: t.locationUrl ?? "",
   };
 }
 
@@ -57,6 +61,8 @@ function formToPayload(f: FormData) {
     maxGuests: Number(f.maxGuests) || 8,
     privatePartyEnabled: f.privatePartyEnabled,
     privatePartyRate: f.privatePartyRate !== "" ? Number(f.privatePartyRate) : null,
+    location: f.location.trim() || null,
+    locationUrl: f.locationUrl.trim() || null,
   };
 }
 
@@ -171,6 +177,28 @@ function DetailsTab({ tour, onSaved }: { tour: Tour; onSaved: (updated: Tour) =>
             value={form.wildlife}
             onChange={(e) => set("wildlife", e.target.value)}
             placeholder="Osprey, Herons, Coastal Birds"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest/30"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Meeting Location <span className="text-gray-400 font-normal">(shown in confirmation email)</span>
+          </label>
+          <input
+            value={form.location}
+            onChange={(e) => set("location", e.target.value)}
+            placeholder="Newport Bay, Ocean City MD"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest/30"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Google Maps Link <span className="text-gray-400 font-normal">(pin URL for the launch point)</span>
+          </label>
+          <input
+            value={form.locationUrl}
+            onChange={(e) => set("locationUrl", e.target.value)}
+            placeholder="https://maps.google.com/..."
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest/30"
           />
         </div>

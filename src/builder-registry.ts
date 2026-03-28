@@ -359,6 +359,14 @@ export const builderComponents: RegisteredComponent[] = [
       { name: "paragraph6", type: "longText" },
       { name: "closingQuote", type: "longText" },
       {
+        name: "grandfatherImageUrl",
+        type: "file",
+        allowedFileTypes: ["jpeg", "jpg", "png", "webp", "avif"],
+        friendlyName: "Grandfather Photo",
+        helperText: "If set, the image crossfades from grandfather to guide photo as the user scrolls",
+      },
+      { name: "grandfatherImageAlt", type: "string", defaultValue: "W.H. Peters — the inspiration" },
+      {
         name: "imageUrl",
         type: "file",
         allowedFileTypes: ["jpeg", "jpg", "png", "webp", "avif"],

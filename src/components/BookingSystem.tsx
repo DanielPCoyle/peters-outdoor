@@ -264,7 +264,8 @@ export default function BookingSystem() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [guests, setGuests] = useState(2);
-  const [details, setDetails] = useState({ name: "", email: "", phone: "", notes: "" });
+  const [details, setDetails] = useState({ name: "", email: "", phone: "", notes: "", emergencyName: "", emergencyPhone: "" });
+  const [pfdSizes, setPfdSizes] = useState<string[]>([]);
   const [isPrivateCharter, setIsPrivateCharter] = useState(false);
   const [selectedAddOnIds, setSelectedAddOnIds] = useState<string[]>([]);
   const [showRequestModal, setShowRequestModal] = useState(false);
@@ -307,6 +308,15 @@ export default function BookingSystem() {
     : [];
   const maxGuests = tour?.maxGuests ?? 8;
   const canProceedToDetails = selectedTourId && selectedDate && (!hasTimeSlots || (availableTimes.length > 0 && selectedTime)) && (slotAvailability === null || slotAvailability.seatsLeft > 0);
+
+  // Keep PFD sizes array in sync with guest count
+  useEffect(() => {
+    setPfdSizes((prev) => {
+      if (prev.length === guests) return prev;
+      if (prev.length < guests) return [...prev, ...Array(guests - prev.length).fill("Adult (88+ lbs)")];
+      return prev.slice(0, guests);
+    });
+  }, [guests]);
 
   useEffect(() => {
     if (!selectedTourId || !selectedDate) {
@@ -354,6 +364,7 @@ export default function BookingSystem() {
           isPrivateCharter,
           selectedAddOnIds,
           ...details,
+          pfdSizes,
           giftCertCode: appliedGiftCert?.code ?? undefined,
         }),
       });
@@ -497,7 +508,15 @@ export default function BookingSystem() {
         guests: isPrivateCharter ? `Private Charter (up to ${maxGuests})` : guests,
         total,
         stripePaymentIntentId,
-        ...details,
+        location: tour?.location ?? undefined,
+        locationUrl: tour?.locationUrl ?? undefined,
+        pfdSizes: pfdSizes.length > 0 ? pfdSizes : undefined,
+        emergencyName: details.emergencyName || undefined,
+        emergencyPhone: details.emergencyPhone || undefined,
+        name: details.name,
+        email: details.email,
+        phone: details.phone,
+        notes: details.notes,
       }),
     }).catch(console.error);
   };
@@ -739,8 +758,8 @@ export default function BookingSystem() {
     <>
       {renderModal}
       {renderRequestModal}
-    <div ref={topRef} className="max-w-2xl mx-auto scroll-mt-24">
-      {step !== "confirmation" && <StepIndicator current={step} />}
+    <div ref={topRef} className="scroll-mt-24">
+      {step !== "confirmation" && <div className="max-w-2xl mx-auto"><StepIndicator current={step} /></div>}
 
       {/* Step 1: Tour + Date + Guests */}
       {step === "select" && (
@@ -757,11 +776,11 @@ export default function BookingSystem() {
                 Loading tours…
               </div>
             ) : (
-            <div className="relative overflow-hidden -mx-4 sm:-mx-6 lg:mx-0">
+            <div className="relative">
               {/* Left arrow */}
               <button
                 onClick={() => tourScrollRef.current?.scrollBy({ left: -200, behavior: "smooth" })}
-                className="absolute left-2 sm:left-3 lg:left-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-sage-muted/30 rounded-full shadow-md transition-colors"
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-sage-muted/30 rounded-full shadow-md transition-colors"
                 aria-label="Scroll left"
               >
                 <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -772,7 +791,7 @@ export default function BookingSystem() {
               {/* Scroll track */}
               <div
                 ref={tourScrollRef}
-                className="flex gap-3 overflow-x-auto pb-2 px-10 sm:px-12 lg:px-10 snap-x snap-mandatory scrollbar-hide"
+                className="flex gap-3 overflow-x-auto pb-2 px-10 snap-x snap-mandatory scrollbar-hide"
               >
                 {tours.map((t) => {
                   const slots = t.timeSlots ?? [];
@@ -783,7 +802,7 @@ export default function BookingSystem() {
                     <div
                       key={t.id}
                       onClick={() => { setSelectedTourId(t.id); setSelectedAddOnIds([]); setSelectedTime(null); setSlotAvailability(null); setIsPrivateCharter(false); }}
-                      className={`relative cursor-pointer rounded-2xl border-2 overflow-hidden transition-all flex-none w-[44%] sm:w-[40%] lg:w-[38%] min-w-[150px] snap-start flex flex-col ${
+                      className={`relative cursor-pointer rounded-2xl border-2 overflow-hidden transition-all flex-none w-[68%] sm:w-[44%] lg:w-[38%] min-w-[150px] snap-start flex flex-col ${
                         selectedTourId === t.id
                           ? "border-forest"
                           : "border-sage-muted/20 hover:border-forest/40"
@@ -841,7 +860,7 @@ export default function BookingSystem() {
               {/* Right arrow */}
               <button
                 onClick={() => tourScrollRef.current?.scrollBy({ left: 200, behavior: "smooth" })}
-                className="absolute right-2 sm:right-3 lg:right-0 top-1/2 -translate-y-1/2 z-10 w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-sage-muted/30 rounded-full shadow-md transition-colors"
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 flex items-center justify-center bg-white/90 hover:bg-white border border-sage-muted/30 rounded-full shadow-md transition-colors"
                 aria-label="Scroll right"
               >
                 <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-forest" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -852,9 +871,16 @@ export default function BookingSystem() {
             )}
           </div>
 
+          <div className="space-y-6">
           {/* Calendar */}
           <div>
             <h3 className="font-semibold text-forest mb-3">Select a Date</h3>
+            {!selectedTourId ? (
+              <div className="rounded-2xl backdrop-blur-sm bg-white/60 border border-sage-muted/20 flex flex-col items-center justify-center gap-2 py-10 px-4 text-center">
+                <p className="font-semibold text-forest text-sm">Pick a tour above to see available dates</p>
+                <p className="text-warm-gray text-xs">Select a tour from the carousel above to get started.</p>
+              </div>
+            ) : (
             <div className="relative">
               <BookingCalendar
                 selected={selectedDate}
@@ -878,7 +904,8 @@ export default function BookingSystem() {
                 </div>
               )}
             </div>
-            {availableDatesSet && (
+            )}
+            {selectedTourId && availableDatesSet && (
               <p className="flex items-center gap-1.5 text-xs text-warm-gray mt-2">
                 <span className="w-2 h-2 rounded-full bg-forest inline-block" />
                 Dates with scheduled departures
@@ -1099,11 +1126,13 @@ export default function BookingSystem() {
               ? "Select a departure time to continue"
               : "Select a tour and date to continue"}
           </button>
+          </div>
         </div>
       )}
 
       {/* Step 2: Contact details */}
       {step === "details" && (
+        <div className="max-w-2xl mx-auto">
         <div className="space-y-5">
           <div className="bg-forest/5 rounded-2xl p-4 border border-forest/10 text-sm">
             <div className="flex items-start justify-between gap-2">
@@ -1160,6 +1189,62 @@ export default function BookingSystem() {
             </div>
           </div>
 
+          {/* PFD / Life Jacket Sizes */}
+          {!isPrivateCharter && (
+            <div className="bg-forest/5 rounded-2xl p-4 border border-forest/10">
+              <p className="text-sm font-medium text-forest mb-1">Life Jacket Size per Guest *</p>
+              <p className="text-xs text-warm-gray mb-3">Select the correct size based on weight for each guest.</p>
+              <div className="space-y-2">
+                {pfdSizes.map((size, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <span className="text-xs font-medium text-forest w-16 shrink-0">Guest {i + 1}</span>
+                    <select
+                      value={size}
+                      onChange={(e) => {
+                        const next = [...pfdSizes];
+                        next[i] = e.target.value;
+                        setPfdSizes(next);
+                      }}
+                      className="flex-1 px-3 py-2 rounded-xl border border-sage-muted/30 bg-white text-forest text-sm focus:outline-none focus:ring-2 focus:ring-forest/30"
+                    >
+                      <option value="Adult (88+ lbs)">Adult (88+ lbs)</option>
+                      <option value="Youth (55-88 lbs)">Youth (55–88 lbs)</option>
+                      <option value="Child (33-55 lbs)">Child (33–55 lbs)</option>
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Emergency Contact */}
+          <div className="bg-forest/5 rounded-2xl p-4 border border-forest/10">
+            <p className="text-sm font-medium text-forest mb-1">Local Emergency Contact *</p>
+            <p className="text-xs text-warm-gray mb-3">Someone local we can reach in case of emergency.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-forest mb-1">Name</label>
+                <input
+                  type="text"
+                  value={details.emergencyName}
+                  onChange={(e) => setDetails((d) => ({ ...d, emergencyName: e.target.value }))}
+                  placeholder="Emergency contact name"
+                  className="w-full px-3 py-2.5 rounded-xl border border-sage-muted/30 bg-white text-forest placeholder-warm-gray/50 focus:outline-none focus:ring-2 focus:ring-forest/30 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-forest mb-1">Phone</label>
+                <input
+                  type="tel"
+                  value={details.emergencyPhone}
+                  onChange={(e) => setDetails((d) => ({ ...d, emergencyPhone: e.target.value }))}
+                  placeholder="(555) 000-0000"
+                  className="w-full px-3 py-2.5 rounded-xl border border-sage-muted/30 bg-white text-forest placeholder-warm-gray/50 focus:outline-none focus:ring-2 focus:ring-forest/30 text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div>
           )}
@@ -1173,7 +1258,7 @@ export default function BookingSystem() {
             </button>
             <button
               onClick={handleProceedToPayment}
-              disabled={!details.name || !details.email || loading}
+              disabled={!details.name || !details.email || !details.emergencyName || !details.emergencyPhone || loading}
               className="flex-[2] py-3 rounded-full bg-forest text-white font-bold text-sm hover:bg-forest/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
@@ -1190,10 +1275,12 @@ export default function BookingSystem() {
             </button>
           </div>
         </div>
+        </div>
       )}
 
       {/* Step 3: Payment */}
       {step === "payment" && (
+        <div className="max-w-2xl mx-auto">
         <div className="space-y-5">
           {/* Order summary */}
           <div className="bg-forest/5 rounded-2xl p-4 border border-forest/10 text-sm space-y-1">
@@ -1361,6 +1448,7 @@ export default function BookingSystem() {
               <strong>Stripe not configured.</strong> Add <code className="bg-amber-100 px-1 rounded">NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code> to your <code className="bg-amber-100 px-1 rounded">.env.local</code> file.
             </div>
           )}
+        </div>
         </div>
       )}
 

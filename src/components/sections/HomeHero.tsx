@@ -37,12 +37,12 @@ export default function HomeHero({
         priority
         className="object-cover"
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/60" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/65" />
       <div className="relative z-10 max-w-7xl mx-auto px-6 text-white">
-        <p className="text-sage-light text-sm font-medium tracking-[0.3em] uppercase mb-4 animate-fade-up opacity-0">
+        <p className="text-white text-sm font-medium tracking-[0.3em] uppercase mb-4 animate-fade-up opacity-0 drop-shadow-md">
           {eyebrow}
         </p>
-        <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl font-bold leading-[1.05] mb-6 animate-fade-up opacity-0 animation-delay-200">
+        <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl font-bold leading-[1.05] mb-6 animate-fade-up opacity-0 animation-delay-200 drop-shadow-lg">
           {headlineLines.map((line, i) => (
             <span key={i}>
               {typeof line === "string" ? line : line.line}

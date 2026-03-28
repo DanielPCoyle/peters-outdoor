@@ -38,8 +38,7 @@ export default function Footer() {
               />
             </div>
             <p className="text-sage-light text-sm leading-relaxed">
-              Guided kayak eco-tours in Ocean City, MD led by an experienced
-              local naturalist and ACA Certified Kayak Instructor.
+              Guided kayak eco-tours in Ocean City, MD by an ACA Certified Instructor.
             </p>
           </div>
 

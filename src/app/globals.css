@@ -20,6 +20,11 @@
   --font-serif: var(--font-playfair);
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 html {
   scroll-behavior: smooth;
 }

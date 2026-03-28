@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 
 interface AboutStorySectionProps {
   eyebrow?: string;
@@ -10,6 +13,8 @@ interface AboutStorySectionProps {
   paragraph5?: string;
   paragraph6?: string;
   closingQuote?: string;
+  grandfatherImageUrl?: string;
+  grandfatherImageAlt?: string;
   imageUrl?: string;
   imageAlt?: string;
 }
@@ -24,13 +29,40 @@ export default function AboutStorySection({
   paragraph5 = "When the idea of starting my own outdoor tour business came to me, I gave a lot of thought about the name of the company. Names like Osprey or Cypress, words that create images of the environment I spend my time in, seemed appropriate, but none felt like \"the one.\" One day, my genius wife asked me, \"What is your inspiration? Where does your love of all this come from?\"",
   paragraph6 = "At that moment it all clicked — my grandfather! All those walks in the woods, all those hours sitting at the kitchen window, a lifetime of trying to make him proud. What better name for my business could there be?",
   closingQuote = "W.H. Peters Outdoor Adventures, named after the man who through his love inspired me to see the beauty of nature, to be curious about the world around us, and to want to share those experiences with others.",
+  grandfatherImageUrl,
+  grandfatherImageAlt = "W.H. Peters — the inspiration",
   imageUrl = "https://static.wixstatic.com/media/5768ba_b0bd60522dbe4c95821c13551a01b85b~mv2.jpg/v1/crop/x_145,y_106,w_2291,h_1555/fill/w_824,h_560,al_c,q_85,enc_avif,quality_auto/PXL_20250811_124020150_edited.jpg",
   imageAlt = "Your guide on the water",
 }: AboutStorySectionProps) {
   const paragraphs = [paragraph1, paragraph2, paragraph3, paragraph4, paragraph5, paragraph6].filter(Boolean);
+  const sectionRef = useRef<HTMLElement>(null);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (!grandfatherImageUrl) return;
+    const section = sectionRef.current;
+    if (!section) return;
+
+    const handleScroll = () => {
+      const rect = section.getBoundingClientRect();
+      const sectionHeight = rect.height;
+      const viewportHeight = window.innerHeight;
+      // progress 0 when section top reaches viewport bottom, 1 when section bottom reaches viewport top
+      const scrolled = viewportHeight - rect.top;
+      const total = sectionHeight + viewportHeight;
+      const raw = scrolled / total;
+      // Map to a 0-1 range where the transition happens in the middle 40% of scroll
+      const mapped = Math.max(0, Math.min(1, (raw - 0.3) / 0.4));
+      setProgress(mapped);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [grandfatherImageUrl]);
 
   return (
-    <section className="py-24 bg-cream-dark">
+    <section ref={sectionRef} className="py-24 bg-cream-dark">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
           <div>
@@ -55,15 +87,43 @@ export default function AboutStorySection({
           </div>
 
           <div className="lg:sticky lg:top-32">
-            <div className="rounded-2xl overflow-hidden shadow-2xl">
-              <Image
-                src={imageUrl}
-                alt={imageAlt}
-                width={824}
-                height={560}
-                className="w-full"
-              />
+            <div className="rounded-2xl overflow-hidden shadow-2xl relative">
+              {grandfatherImageUrl ? (
+                <>
+                  <Image
+                    src={grandfatherImageUrl}
+                    alt={grandfatherImageAlt}
+                    width={824}
+                    height={560}
+                    className="w-full"
+                    style={{ opacity: 1 - progress }}
+                  />
+                  <Image
+                    src={imageUrl}
+                    alt={imageAlt}
+                    width={824}
+                    height={560}
+                    className="w-full absolute inset-0"
+                    style={{ opacity: progress }}
+                  />
+                </>
+              ) : (
+                <Image
+                  src={imageUrl}
+                  alt={imageAlt}
+                  width={824}
+                  height={560}
+                  className="w-full"
+                />
+              )}
             </div>
+
+            {/* Caption that transitions with the image */}
+            {grandfatherImageUrl && (
+              <div className="mt-4 text-center text-sm text-warm-gray italic transition-opacity duration-300">
+                {progress < 0.5 ? grandfatherImageAlt : imageAlt}
+              </div>
+            )}
 
             <div className="mt-8 grid grid-cols-2 gap-4">
               <div className="bg-white rounded-xl p-6 text-center shadow-sm">
