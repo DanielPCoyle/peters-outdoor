@@ -64,7 +64,7 @@ export default function AboutStorySection({
   return (
     <section ref={sectionRef} className="py-24 bg-cream-dark">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
           <div>
             <p className="text-sage text-sm font-medium tracking-[0.3em] uppercase mb-3">
               {eyebrow}
@@ -86,6 +86,7 @@ export default function AboutStorySection({
             </div>
           </div>
 
+          <div>
           <div className="lg:sticky lg:top-32">
             <div className="rounded-2xl overflow-hidden shadow-2xl relative">
               {grandfatherImageUrl ? (
@@ -145,6 +146,7 @@ export default function AboutStorySection({
                 <p className="text-warm-gray text-xs">Eastern Shore Expert</p>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>
