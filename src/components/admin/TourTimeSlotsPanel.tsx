@@ -11,9 +11,17 @@ interface TourTimeSlot {
   startDate: string | null;
   repeatEvery: string | null;
   repeatCount: number | null;
+  timeFrame: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+interface TimeFrameDef {
+  name: string;
+  startTime: string;
+  endTime: string;
+  color: string;
 }
 
 const EMPTY_FORM = {
@@ -23,6 +31,7 @@ const EMPTY_FORM = {
   startDate: "",
   repeatEvery: "weekly" as "weekly" | "daily" | "monthly",
   repeatCount: 1,
+  timeFrame: "",
 };
 
 function formatTime(time: string): string {
@@ -52,6 +61,7 @@ export default function TourTimeSlotsPanel({ tourId }: { tourId: string }) {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [dateInput, setDateInput] = useState("");
+  const [timeFrameDefs, setTimeFrameDefs] = useState<TimeFrameDef[]>([]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -71,6 +81,10 @@ export default function TourTimeSlotsPanel({ tourId }: { tourId: string }) {
 
   useEffect(() => {
     fetchSlots();
+    fetch("/api/admin/settings/time-frames")
+      .then((r) => r.json())
+      .then((d) => setTimeFrameDefs(d.timeFrames ?? []))
+      .catch(console.error);
   }, [fetchSlots]);
 
   const handleAddDate = () => {
@@ -85,6 +99,15 @@ export default function TourTimeSlotsPanel({ tourId }: { tourId: string }) {
     setForm((f) => ({ ...f, dates: f.dates.filter((d) => d !== date) }));
   };
 
+  // Auto-suggest time frame when time changes
+  const suggestTimeFrame = (time: string): string => {
+    if (!time || timeFrameDefs.length === 0) return "";
+    for (const tf of timeFrameDefs) {
+      if (time >= tf.startTime && time < tf.endTime) return tf.name;
+    }
+    return "";
+  };
+
   const handleSave = async () => {
     if (!form.time) return;
     setSaving(true);
@@ -92,6 +115,7 @@ export default function TourTimeSlotsPanel({ tourId }: { tourId: string }) {
       const body: Record<string, unknown> = {
         time: form.time,
         type: form.type,
+        timeFrame: form.timeFrame || null,
       };
       if (form.type === "specific") {
         body.dates = form.dates;
@@ -190,6 +214,19 @@ export default function TourTimeSlotsPanel({ tourId }: { tourId: string }) {
                   {slot.type === "recurring" ? "Recurring" : "Specific"}
                 </span>
 
+                {/* Time frame badge */}
+                {slot.timeFrame && (() => {
+                  const def = timeFrameDefs.find((tf) => tf.name === slot.timeFrame);
+                  return (
+                    <span
+                      className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0 text-white"
+                      style={{ backgroundColor: def?.color ?? "#6b7280" }}
+                    >
+                      {slot.timeFrame}
+                    </span>
+                  );
+                })()}
+
                 {/* Details */}
                 <div className="min-w-0">
                   {slot.type === "specific" ? (
@@ -240,10 +277,50 @@ export default function TourTimeSlotsPanel({ tourId }: { tourId: string }) {
             <input
               type="time"
               value={form.time}
-              onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))}
+              onChange={(e) => {
+                const t = e.target.value;
+                setForm((f) => ({ ...f, time: t, timeFrame: f.timeFrame || suggestTimeFrame(t) }));
+              }}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest/30"
             />
           </div>
+
+          {/* Time Frame */}
+          {timeFrameDefs.length > 0 && (
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1.5">
+                Time Frame
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, timeFrame: "" }))}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                    !form.timeFrame
+                      ? "bg-gray-800 text-white border-gray-800"
+                      : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+                  }`}
+                >
+                  None
+                </button>
+                {timeFrameDefs.map((tf) => (
+                  <button
+                    key={tf.name}
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, timeFrame: tf.name }))}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors ${
+                      form.timeFrame === tf.name
+                        ? "text-white border-transparent"
+                        : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+                    }`}
+                    style={form.timeFrame === tf.name ? { backgroundColor: tf.color, borderColor: tf.color } : undefined}
+                  >
+                    {tf.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Type toggle */}
           <div>

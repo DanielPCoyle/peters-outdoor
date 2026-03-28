@@ -54,6 +54,7 @@ export async function GET() {
         startDate: s.startDate ?? null,
         repeatEvery: (s.repeatEvery ?? null) as "daily" | "weekly" | "monthly" | null,
         repeatCount: s.repeatCount ?? null,
+        timeFrame: s.timeFrame ?? null,
         isActive: s.isActive,
       })),
     }));

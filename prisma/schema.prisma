@@ -65,6 +65,7 @@ model TourTimeSlot {
   startDate   String?  @map("start_date")   // for recurring
   repeatEvery String?  @map("repeat_every") // "daily" | "weekly" | "monthly"
   repeatCount Int?     @map("repeat_count") // how many occurrences
+  timeFrame   String?  @map("time_frame")   // e.g. "Morning", "Sunset"
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")

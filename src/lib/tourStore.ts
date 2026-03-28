@@ -12,6 +12,7 @@ export interface TourTimeSlot {
   startDate: string | null;
   repeatEvery: "daily" | "weekly" | "monthly" | null;
   repeatCount: number | null;
+  timeFrame: string | null;
   isActive: boolean;
 }
 

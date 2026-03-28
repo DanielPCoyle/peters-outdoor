@@ -106,10 +106,11 @@ function formatNextDate(dateStr: string): string {
 }
 
 /** Returns the set of all YYYY-MM-DD dates that have at least one active time slot */
-function getAllSlotDates(slots: TourTimeSlot[]): Set<string> {
+function getAllSlotDates(slots: TourTimeSlot[], timeFrame?: string | null): Set<string> {
   const dates = new Set<string>();
   for (const slot of slots) {
     if (!slot.isActive) continue;
+    if (timeFrame && slot.timeFrame !== timeFrame) continue;
     if (slot.type === "specific") {
       slot.dates.forEach((d) => dates.add(d));
     } else if (slot.type === "recurring" && slot.startDate && slot.repeatEvery && slot.repeatCount) {
@@ -127,10 +128,11 @@ function getAllSlotDates(slots: TourTimeSlot[]): Set<string> {
 }
 
 /** Returns sorted 24-h time strings available for a given YYYY-MM-DD date */
-function getAvailableTimesForDate(slots: TourTimeSlot[], dateStr: string): string[] {
+function getAvailableTimesForDate(slots: TourTimeSlot[], dateStr: string, timeFrame?: string | null): string[] {
   const times = new Set<string>();
   for (const slot of slots) {
     if (!slot.isActive) continue;
+    if (timeFrame && slot.timeFrame !== timeFrame) continue;
     if (slot.type === "specific") {
       if (slot.dates.includes(dateStr)) times.add(slot.time);
     } else if (slot.type === "recurring" && slot.startDate && slot.repeatEvery && slot.repeatCount) {
@@ -246,6 +248,8 @@ export default function BookingSystem() {
   const [step, setStep] = useState<Step>("select");
   const [selectedTourId, setSelectedTourId] = useState<string | null>(null);
   const [infoTour, setInfoTour] = useState<Tour | null>(null);
+  const [timeFrameDefs, setTimeFrameDefs] = useState<{ name: string; color: string }[]>([]);
+  const [selectedTimeFrame, setSelectedTimeFrame] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/tours")
@@ -253,6 +257,10 @@ export default function BookingSystem() {
       .then((data) => setTours(data.tours ?? []))
       .catch(console.error)
       .finally(() => setToursLoading(false));
+    fetch("/api/time-frames")
+      .then((r) => r.json())
+      .then((d) => setTimeFrameDefs(d.timeFrames ?? []))
+      .catch(console.error);
   }, []);
 
   const goToStep = useCallback((s: Step) => {
@@ -300,11 +308,17 @@ export default function BookingSystem() {
 
   const tourTimeSlots = tour?.timeSlots ?? [];
   const hasTimeSlots = tourTimeSlots.length > 0;
-  const availableDatesSet = hasTimeSlots ? getAllSlotDates(tourTimeSlots) : undefined;
+
+  // Derive which time frames this tour actually has slots for
+  const tourTimeFrames = hasTimeSlots
+    ? Array.from(new Set(tourTimeSlots.filter((s) => s.isActive && s.timeFrame).map((s) => s.timeFrame!)))
+    : [];
+
+  const availableDatesSet = hasTimeSlots ? getAllSlotDates(tourTimeSlots, selectedTimeFrame) : undefined;
   const nextSlotDateStr = hasTimeSlots ? getNextSlotDate(tourTimeSlots) : null;
   const calendarInitialMonth = nextSlotDateStr ? new Date(nextSlotDateStr + "T12:00:00") : null;
   const availableTimes = selectedDate
-    ? getAvailableTimesForDate(tourTimeSlots, selectedDate.toISOString().split("T")[0])
+    ? getAvailableTimesForDate(tourTimeSlots, selectedDate.toISOString().split("T")[0], selectedTimeFrame)
     : [];
   const maxGuests = tour?.maxGuests ?? 8;
   const canProceedToDetails = selectedTourId && selectedDate && (!hasTimeSlots || (availableTimes.length > 0 && selectedTime)) && (slotAvailability === null || slotAvailability.seatsLeft > 0);
@@ -801,7 +815,7 @@ export default function BookingSystem() {
                   return (
                     <div
                       key={t.id}
-                      onClick={() => { setSelectedTourId(t.id); setSelectedAddOnIds([]); setSelectedTime(null); setSlotAvailability(null); setIsPrivateCharter(false); }}
+                      onClick={() => { setSelectedTourId(t.id); setSelectedAddOnIds([]); setSelectedTime(null); setSelectedTimeFrame(null); setSlotAvailability(null); setIsPrivateCharter(false); }}
                       className={`relative cursor-pointer rounded-2xl border-2 overflow-hidden transition-all flex-none w-[68%] sm:w-[44%] lg:w-[38%] min-w-[150px] snap-start flex flex-col ${
                         selectedTourId === t.id
                           ? "border-forest"
@@ -875,6 +889,47 @@ export default function BookingSystem() {
           {/* Calendar */}
           <div>
             <h3 className="font-semibold text-forest mb-3">Select a Date</h3>
+
+            {/* Time frame filter pills */}
+            {selectedTourId && tourTimeFrames.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => { setSelectedTimeFrame(null); setSelectedDate(null); setSelectedTime(null); }}
+                  className={`px-4 py-2 text-xs font-semibold rounded-full border-2 transition-all ${
+                    selectedTimeFrame === null
+                      ? "border-forest bg-forest text-white"
+                      : "border-sage-muted/30 bg-white text-forest hover:border-forest/50"
+                  }`}
+                >
+                  All Times
+                </button>
+                {tourTimeFrames.map((tf) => {
+                  const def = timeFrameDefs.find((d) => d.name === tf);
+                  const color = def?.color ?? "#2D5016";
+                  const isSelected = selectedTimeFrame === tf;
+                  return (
+                    <button
+                      key={tf}
+                      type="button"
+                      onClick={() => { setSelectedTimeFrame(tf); setSelectedDate(null); setSelectedTime(null); }}
+                      className={`px-4 py-2 text-xs font-semibold rounded-full border-2 transition-all ${
+                        isSelected
+                          ? "text-white"
+                          : "bg-white text-forest hover:border-forest/50"
+                      }`}
+                      style={isSelected
+                        ? { backgroundColor: color, borderColor: color }
+                        : { borderColor: `${color}40` }
+                      }
+                    >
+                      {tf}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {!selectedTourId ? (
               <div className="rounded-2xl backdrop-blur-sm bg-white/60 border border-sage-muted/20 flex flex-col items-center justify-center gap-2 py-10 px-4 text-center">
                 <p className="font-semibold text-forest text-sm">Pick a tour above to see available dates</p>

@@ -25,13 +25,14 @@ export async function POST(
   const { id: tourId } = await params;
   try {
     const body = await req.json();
-    const { time, type, dates, startDate, repeatEvery, repeatCount } = body as {
+    const { time, type, dates, startDate, repeatEvery, repeatCount, timeFrame } = body as {
       time: string;
       type: "specific" | "recurring";
       dates?: string[];
       startDate?: string;
       repeatEvery?: string;
       repeatCount?: number;
+      timeFrame?: string | null;
     };
 
     if (!time) {
@@ -50,6 +51,7 @@ export async function POST(
         startDate: type === "recurring" ? (startDate ?? null) : null,
         repeatEvery: type === "recurring" ? (repeatEvery ?? null) : null,
         repeatCount: type === "recurring" ? (repeatCount ?? null) : null,
+        timeFrame: timeFrame ?? null,
       },
     });
     return NextResponse.json({ timeSlot }, { status: 201 });
