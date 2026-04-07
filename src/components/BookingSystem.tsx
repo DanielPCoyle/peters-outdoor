@@ -287,6 +287,10 @@ export default function BookingSystem() {
   const [appliedGiftCert, setAppliedGiftCert] = useState<{ code: string; discount: number } | null>(null);
   const [giftCertLoading, setGiftCertLoading] = useState(false);
   const [giftCertError, setGiftCertError] = useState<string | null>(null);
+  const [discountInput, setDiscountInput] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; type: string; value: number; amount: number } | null>(null);
+  const [discountLoading, setDiscountLoading] = useState(false);
+  const [discountError, setDiscountError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [slotAvailability, setSlotAvailability] = useState<{ bookedGuests: number; maxGuests: number; seatsLeft: number } | null>(null);
@@ -298,8 +302,10 @@ export default function BookingSystem() {
   const addOnsTotal = selectedAddOns.reduce((s, a) => s + a.price, 0);
   const tourSubtotal = tour ? (isPrivateCharter ? PRIVATE_CHARTER_PRICE : tour.price * guests) : 0;
   const baseTotal = tourSubtotal + addOnsTotal;
-  const discount = appliedGiftCert ? Math.min(appliedGiftCert.discount, baseTotal) : 0;
-  const total = baseTotal - discount;
+  const promoDiscount = appliedDiscount ? appliedDiscount.amount : 0;
+  const afterPromo = baseTotal - promoDiscount;
+  const discount = appliedGiftCert ? Math.min(appliedGiftCert.discount, afterPromo) : 0;
+  const total = afterPromo - discount;
 
   const toggleAddOn = (id: string) =>
     setSelectedAddOnIds((prev) =>
@@ -380,6 +386,7 @@ export default function BookingSystem() {
           ...details,
           pfdSizes,
           giftCertCode: appliedGiftCert?.code ?? undefined,
+          discountCode: appliedDiscount?.code ?? undefined,
         }),
       });
       const data = await res.json();
@@ -469,6 +476,92 @@ export default function BookingSystem() {
         if (res.ok) setClientSecret(data.clientSecret);
       } catch {
         // ignore — user can go back and retry
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  const handleApplyDiscount = async () => {
+    const code = discountInput.trim().toUpperCase();
+    if (!code) return;
+    setDiscountLoading(true);
+    setDiscountError(null);
+    try {
+      const res = await fetch(`/api/validate-discount-code?code=${encodeURIComponent(code)}`);
+      const data = await res.json();
+      if (!data.valid) {
+        setDiscountError(data.error ?? "Invalid discount code.");
+        return;
+      }
+      const discountAmount = data.discountType === "percentage"
+        ? Math.round(baseTotal * (data.discountValue / 100) * 100) / 100
+        : Math.min(data.discountValue, baseTotal);
+      setAppliedDiscount({ code: data.code, type: data.discountType, value: data.discountValue, amount: discountAmount });
+      setDiscountInput("");
+      // Re-create payment intent with discount
+      if (step === "payment" && tour && selectedDate) {
+        setLoading(true);
+        setClientSecret(null);
+        setFullyPaidByGiftCert(false);
+        const res2 = await fetch("/api/create-payment-intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tourId: tour.id,
+            date: selectedDate.toISOString().split("T")[0],
+            guests,
+            isPrivateCharter,
+            selectedAddOnIds,
+            ...details,
+            giftCertCode: appliedGiftCert?.code ?? undefined,
+            discountCode: data.code,
+          }),
+        });
+        const data2 = await res2.json();
+        if (!res2.ok) throw new Error(data2.error ?? "Failed to apply discount.");
+        if (data2.fullyPaid) {
+          setFullyPaidByGiftCert(true);
+        } else {
+          setClientSecret(data2.clientSecret);
+        }
+        setLoading(false);
+      }
+    } catch (err: unknown) {
+      setDiscountError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setDiscountLoading(false);
+    }
+  };
+
+  const handleRemoveDiscount = async () => {
+    setAppliedDiscount(null);
+    setDiscountError(null);
+    if (step === "payment" && tour && selectedDate) {
+      setLoading(true);
+      setClientSecret(null);
+      setFullyPaidByGiftCert(false);
+      try {
+        const res = await fetch("/api/create-payment-intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tourId: tour.id,
+            date: selectedDate.toISOString().split("T")[0],
+            guests,
+            isPrivateCharter,
+            selectedAddOnIds,
+            ...details,
+            giftCertCode: appliedGiftCert?.code ?? undefined,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (data.fullyPaid) setFullyPaidByGiftCert(true);
+          else setClientSecret(data.clientSecret);
+        }
+      } catch {
+        // ignore
       } finally {
         setLoading(false);
       }
@@ -712,6 +805,12 @@ export default function BookingSystem() {
             <span className="text-warm-gray">Guests</span>
             <span className="text-forest font-medium">{guests}</span>
           </div>
+          {appliedDiscount && promoDiscount > 0 && (
+            <div className="flex justify-between text-sm text-green-700">
+              <span>Discount ({appliedDiscount.code})</span>
+              <span className="font-medium">−${promoDiscount.toFixed(2)}</span>
+            </div>
+          )}
           {appliedGiftCert && discount > 0 && (
             <div className="flex justify-between text-sm text-green-700">
               <span>Gift certificate ({appliedGiftCert.code})</span>
@@ -721,7 +820,7 @@ export default function BookingSystem() {
           <div className="flex justify-between text-sm border-t border-sage-muted/20 pt-2 mt-2">
             <span className="text-warm-gray font-semibold">Total paid</span>
             <div className="text-right">
-              {appliedGiftCert && discount > 0 && (
+              {(discount > 0 || promoDiscount > 0) && (
                 <p className="text-warm-gray line-through text-xs">${baseTotal.toFixed(2)}</p>
               )}
               <span className="text-forest font-bold">${total.toFixed(2)}</span>
@@ -1365,6 +1464,12 @@ export default function BookingSystem() {
                 ))}
               </div>
             )}
+            {promoDiscount > 0 && (
+              <div className="pt-1 border-t border-forest/10 flex justify-between text-xs">
+                <span className="text-forest/70">Discount ({appliedDiscount?.code})</span>
+                <span className="text-green-700 font-semibold">−${promoDiscount.toFixed(2)}</span>
+              </div>
+            )}
             {discount > 0 && (
               <div className="pt-1 border-t border-forest/10 flex justify-between text-xs">
                 <span className="text-forest/70">Gift certificate ({appliedGiftCert?.code})</span>
@@ -1415,6 +1520,58 @@ export default function BookingSystem() {
               <button
                 type="button"
                 onClick={handleRemoveGiftCert}
+                className="text-xs text-green-700 underline hover:text-green-900"
+              >
+                Remove
+              </button>
+            </div>
+          )}
+
+          {/* Discount code input */}
+          {!appliedDiscount ? (
+            <div className="bg-white rounded-2xl border border-sage-muted/20 p-4">
+              <p className="text-sm font-semibold text-forest mb-3">Have a discount code?</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={discountInput}
+                  onChange={(e) => { setDiscountInput(e.target.value.toUpperCase()); setDiscountError(null); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleApplyDiscount()}
+                  placeholder="e.g. SUMMER15"
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-sage-muted/30 bg-white text-forest placeholder-warm-gray/50 focus:outline-none focus:ring-2 focus:ring-forest/30 text-sm font-mono tracking-wider"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyDiscount}
+                  disabled={!discountInput || discountLoading}
+                  className="px-5 py-2.5 rounded-xl bg-forest text-white text-sm font-semibold hover:bg-forest/90 transition-colors disabled:opacity-40"
+                >
+                  {discountLoading ? "…" : "Apply"}
+                </button>
+              </div>
+              {discountError && (
+                <p className="mt-2 text-xs text-red-600">{discountError}</p>
+              )}
+            </div>
+          ) : (
+            <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-green-800">{appliedDiscount.code}</p>
+                  <p className="text-xs text-green-700">
+                    {appliedDiscount.type === "percentage" ? `${appliedDiscount.value}% off` : `$${appliedDiscount.value.toFixed(2)} off`}
+                    {" "}(−${promoDiscount.toFixed(2)})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleRemoveDiscount}
                 className="text-xs text-green-700 underline hover:text-green-900"
               >
                 Remove

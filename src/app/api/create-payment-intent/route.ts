@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { getRequestByCode } from "@/lib/giftCertStore";
 import { getTourById } from "@/lib/tourStore";
 import { getAddOnById } from "@/lib/addOnStore";
+import { prisma } from "@/lib/prisma";
 
 const PRIVATE_CHARTER_PRICE = 399;
 
@@ -14,7 +15,7 @@ export async function POST(req: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
   const body = await req.json();
-  const { tourId, date, time, guests, isPrivateCharter, name, email, phone, notes, giftCertCode, selectedAddOnIds, pfdSizes, emergencyName, emergencyPhone } = body;
+  const { tourId, date, time, guests, isPrivateCharter, name, email, phone, notes, giftCertCode, discountCode: discountCodeInput, selectedAddOnIds, pfdSizes, emergencyName, emergencyPhone } = body;
 
   if (!tourId || !date || !guests || !name || !email) {
     return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
@@ -46,11 +47,35 @@ export async function POST(req: NextRequest) {
     giftCertId = cert.id;
   }
 
-  const total = baseTotal - giftCertDiscount;
+  // Validate discount code if provided
+  let promoDiscount = 0;
+  let promoCodeId: string | undefined;
+  if (discountCodeInput) {
+    const promo = await prisma.discountCode.findUnique({ where: { code: discountCodeInput.trim().toUpperCase() } });
+    if (!promo || !promo.isActive) {
+      return NextResponse.json({ error: "Invalid or inactive discount code." }, { status: 400 });
+    }
+    if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) {
+      return NextResponse.json({ error: "Discount code has expired." }, { status: 400 });
+    }
+    if (promo.maxUses && promo.usedCount >= promo.maxUses) {
+      return NextResponse.json({ error: "Discount code usage limit reached." }, { status: 400 });
+    }
+    if (promo.discountType === "percentage") {
+      promoDiscount = Math.round(baseTotal * (promo.discountValue / 100) * 100) / 100;
+    } else {
+      promoDiscount = Math.min(promo.discountValue, baseTotal);
+    }
+    promoCodeId = promo.id;
+    // Increment usage
+    await prisma.discountCode.update({ where: { id: promo.id }, data: { usedCount: { increment: 1 } } });
+  }
 
-  // Fully covered by gift cert — no Stripe needed
+  const total = baseTotal - promoDiscount - giftCertDiscount;
+
+  // Fully covered by gift cert + discount — no Stripe needed
   if (total <= 0) {
-    return NextResponse.json({ fullyPaid: true, giftCertId, giftCertDiscount });
+    return NextResponse.json({ fullyPaid: true, giftCertId, giftCertDiscount, promoDiscount, promoCodeId });
   }
 
   const description = isPrivateCharter
@@ -74,6 +99,9 @@ export async function POST(req: NextRequest) {
       giftCertCode: giftCertCode ?? "",
       giftCertId: giftCertId ?? "",
       giftCertDiscount: String(giftCertDiscount),
+      discountCode: discountCodeInput ?? "",
+      discountCodeId: promoCodeId ?? "",
+      promoDiscount: String(promoDiscount),
       addOns: validAddOns.map((a) => a.name).join(", "),
       addOnsTotal: String(addOnsTotal),
       pfdSizes: Array.isArray(pfdSizes) ? pfdSizes.join(", ") : "",
@@ -86,5 +114,7 @@ export async function POST(req: NextRequest) {
     clientSecret: paymentIntent.client_secret,
     giftCertDiscount,
     giftCertId,
+    promoDiscount,
+    promoCodeId,
   });
 }

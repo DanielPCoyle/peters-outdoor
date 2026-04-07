@@ -121,6 +121,21 @@ model Settings {
   @@map("settings")
 }
 
+model DiscountCode {
+  id            String    @id @default(uuid())
+  code          String    @unique
+  description   String?
+  discountType  String    @default("percentage") @map("discount_type")
+  discountValue Float     @map("discount_value")
+  maxUses       Int?      @map("max_uses")
+  usedCount     Int       @default(0) @map("used_count")
+  expiresAt     DateTime? @map("expires_at")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@map("discount_codes")
+}
+
 model GiftCertificate {
   id                    String    @id @default(uuid())
   createdAt             DateTime  @default(now()) @map("created_at")

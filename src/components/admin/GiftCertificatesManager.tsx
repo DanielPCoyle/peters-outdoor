@@ -176,6 +176,126 @@ const STATUS_META: Record<string, { label: string; styles: string }> = {
   redeemed:        { label: "Redeemed",         styles: "bg-blue-50 text-blue-700 border-blue-200"   },
 };
 
+interface GiftCertDenomination {
+  label: string;
+  value: number;
+  sublabel: string;
+}
+
+function DenominationEditor({ onToast }: { onToast: (msg: string, type: "success" | "error") => void }) {
+  const [denoms, setDenoms] = useState<GiftCertDenomination[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/settings/gift-cert-denominations")
+      .then((r) => r.json())
+      .then((data) => setDenoms(data.denominations ?? []))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings/gift-cert-denominations", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ denominations: denoms }),
+      });
+      if (!res.ok) throw new Error("Failed to save.");
+      onToast("Denominations saved.", "success");
+    } catch {
+      onToast("Failed to save denominations.", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const update = (idx: number, field: keyof GiftCertDenomination, val: string | number) => {
+    setDenoms((prev) => prev.map((d, i) => i === idx ? { ...d, [field]: val } : d));
+  };
+
+  const add = () => {
+    setDenoms((prev) => [...prev, { label: "$0", value: 0, sublabel: "" }]);
+  };
+
+  const remove = (idx: number) => {
+    setDenoms((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  if (!open) {
+    return (
+      <div className="mb-6">
+        <button
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-2 text-sm text-forest font-semibold hover:underline"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          Edit Gift Certificate Denominations
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mb-6 bg-white rounded-2xl border border-gray-200 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-bold text-forest">Gift Certificate Denominations</h3>
+        <button onClick={() => setOpen(false)} className="text-warm-gray hover:text-forest text-xs">Close</button>
+      </div>
+      {loading ? (
+        <p className="text-sm text-warm-gray">Loading…</p>
+      ) : (
+        <div className="space-y-2">
+          {denoms.map((d, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                type="text"
+                value={d.label}
+                onChange={(e) => update(i, "label", e.target.value)}
+                placeholder="Label (e.g. $60)"
+                className="w-24 px-3 py-2 rounded-lg border border-gray-200 text-sm text-forest"
+              />
+              <input
+                type="number"
+                value={d.value}
+                onChange={(e) => update(i, "value", parseFloat(e.target.value) || 0)}
+                placeholder="Amount"
+                className="w-24 px-3 py-2 rounded-lg border border-gray-200 text-sm text-forest"
+              />
+              <input
+                type="text"
+                value={d.sublabel}
+                onChange={(e) => update(i, "sublabel", e.target.value)}
+                placeholder="Description"
+                className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm text-forest"
+              />
+              <button onClick={() => remove(i)} className="text-red-400 hover:text-red-600 p-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          ))}
+          <p className="text-xs text-warm-gray">Set value to 0 for &quot;Custom amount&quot; option.</p>
+          <div className="flex gap-2 pt-2">
+            <button onClick={add} className="px-4 py-2 text-xs font-semibold text-forest border border-forest/30 rounded-lg hover:bg-forest/5">
+              + Add Option
+            </button>
+            <button onClick={save} disabled={saving} className="px-4 py-2 text-xs font-bold text-white bg-forest rounded-lg hover:bg-forest/90 disabled:opacity-50">
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function GiftCertificatesManager() {
   const [requests, setRequests] = useState<GiftCertRequest[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
@@ -277,6 +397,9 @@ export default function GiftCertificatesManager() {
 
       {/* Analytics */}
       <Analytics certs={requests} range={dateRange} onRangeChange={setDateRange} />
+
+      {/* Denomination settings */}
+      <DenominationEditor onToast={showToast} />
 
       {/* Toast */}
       {toast && (

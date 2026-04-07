@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 
@@ -8,11 +8,16 @@ const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
   : null;
 
-const DENOMINATIONS = [
-  { label: "$75",  value: 75,  sublabel: "1 Standard Tour" },
-  { label: "$85",  value: 85,  sublabel: "1 Premium Tour" },
-  { label: "$150", value: 150, sublabel: "2 Standard Guests" },
-  { label: "$170", value: 170, sublabel: "2 Premium Guests" },
+interface Denomination {
+  label: string;
+  value: number;
+  sublabel: string;
+}
+
+const FALLBACK_DENOMINATIONS: Denomination[] = [
+  { label: "$60",  value: 60,  sublabel: "1 Tour Guest" },
+  { label: "$120", value: 120, sublabel: "2 Tour Guests" },
+  { label: "$180", value: 180, sublabel: "3 Tour Guests" },
   { label: "Custom", value: 0, sublabel: "Enter any amount" },
 ];
 
@@ -167,9 +172,23 @@ function PaymentForm({
 
 export default function GiftCertificateForm() {
   const [step, setStep] = useState<Step>("details");
+  const [denominations, setDenominations] = useState<Denomination[]>(FALLBACK_DENOMINATIONS);
   const [isCustom, setIsCustom] = useState(false);
-  const [selectedDenom, setSelectedDenom] = useState(75);
+  const [selectedDenom, setSelectedDenom] = useState(60);
   const [customAmount, setCustomAmount] = useState("");
+
+  useEffect(() => {
+    fetch("/api/settings/gift-cert-denominations")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data.denominations) && data.denominations.length > 0) {
+          setDenominations(data.denominations);
+          const firstNonCustom = data.denominations.find((d: Denomination) => d.value > 0);
+          if (firstNonCustom) setSelectedDenom(firstNonCustom.value);
+        }
+      })
+      .catch(() => {}); // fall back to defaults
+  }, []);
   const [form, setForm] = useState({ yourName: "", yourEmail: "", recipientName: "", message: "" });
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [requestId, setRequestId] = useState<string | null>(null);
@@ -250,7 +269,7 @@ export default function GiftCertificateForm() {
           <div>
             <label className="block text-sm font-medium text-forest mb-2">Select Amount</label>
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-              {DENOMINATIONS.map((d) => {
+              {denominations.map((d) => {
                 const active = d.value === 0 ? isCustom : (!isCustom && selectedDenom === d.value);
                 return (
                   <button
