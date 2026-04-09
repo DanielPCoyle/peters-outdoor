@@ -20,6 +20,10 @@ import BookingOptionsSection from "@/components/sections/BookingOptionsSection";
 import BookingFormBlock from "@/components/sections/BookingFormBlock";
 import GroupBookingSection from "@/components/sections/GroupBookingSection";
 import LegalPage from "@/components/sections/LegalPage";
+import GiftCertIntroSection from "@/components/sections/GiftCertIntroSection";
+import GiftCertHowItWorksSection from "@/components/sections/GiftCertHowItWorksSection";
+import GiftCertFormSection from "@/components/sections/GiftCertFormSection";
+import GiftCertCtaSection from "@/components/sections/GiftCertCtaSection";
 
 export const builderComponents: RegisteredComponent[] = [
   {
@@ -486,6 +490,104 @@ export const builderComponents: RegisteredComponent[] = [
         ],
         defaultValue: [],
       },
+    ],
+  },
+
+  {
+    component: GiftCertIntroSection,
+    name: "GiftCertIntroSection",
+    inputs: [
+      { name: "title", type: "string", defaultValue: "The Most Memorable Gift They'll Ever Receive" },
+      {
+        name: "description",
+        type: "longText",
+        defaultValue: "Skip the stuff. Give an experience they'll talk about for years. A W.H. Peters Outdoor Adventures gift certificate is redeemable for any tour, any date — no expiration.",
+      },
+      {
+        name: "occasions",
+        type: "list",
+        subFields: [{ name: "value", type: "string" }],
+        defaultValue: [
+          { value: "Birthdays" },
+          { value: "Anniversaries" },
+          { value: "Holidays" },
+          { value: "Graduations" },
+          { value: "Mother's / Father's Day" },
+          { value: "Corporate Gifts" },
+          { value: "Just Because" },
+        ],
+      },
+    ],
+  },
+
+  {
+    component: GiftCertHowItWorksSection,
+    name: "GiftCertHowItWorksSection",
+    inputs: [
+      {
+        name: "steps",
+        type: "list",
+        subFields: [
+          { name: "step", type: "string" },
+          { name: "title", type: "string" },
+          { name: "body", type: "longText" },
+        ],
+        defaultValue: [
+          { step: "01", title: "Choose Your Amount", body: "Pick a denomination or enter a custom amount. Any tour, any date." },
+          { step: "02", title: "We Send the Certificate", body: "You'll receive a personalized PDF gift certificate by email within 24 hours." },
+          { step: "03", title: "Recipient Books Their Tour", body: "They pick their tour and date, then apply the certificate at checkout." },
+        ],
+      },
+    ],
+  },
+
+  {
+    component: GiftCertFormSection,
+    name: "GiftCertFormSection",
+    inputs: [
+      { name: "whatsIncludedTitle", type: "string", defaultValue: "What's Included" },
+      {
+        name: "whatsIncluded",
+        type: "list",
+        subFields: [{ name: "value", type: "string" }],
+        defaultValue: [
+          { value: "Valid for any tour (Newport Bay, Pocomoke, Assateague, St. Martin, Sunset, Full Moon)" },
+          { value: "Redeemable for any available date" },
+          { value: "No expiration date" },
+          { value: "Transferable — gift it to anyone" },
+          { value: "All equipment provided (kayak, paddle, PFD)" },
+        ],
+      },
+      { name: "popularAmountsTitle", type: "string", defaultValue: "Popular Amounts" },
+      {
+        name: "popularAmounts",
+        type: "list",
+        subFields: [
+          { name: "label", type: "string" },
+          { name: "amount", type: "string" },
+        ],
+        defaultValue: [
+          { label: "1 Standard Tour", amount: "$75" },
+          { label: "1 Premium Tour (Sunset or Full Moon)", amount: "$85" },
+          { label: "2 People, Standard Tour", amount: "$150" },
+          { label: "2 People, Premium Tour", amount: "$170" },
+        ],
+      },
+      { name: "questionsTitle", type: "string", defaultValue: "Questions?" },
+      { name: "questionsDescription", type: "longText", defaultValue: "We're happy to help you choose the right gift." },
+      { name: "email", type: "string", defaultValue: "info@petersoutdoor.com" },
+      { name: "phone", type: "string", defaultValue: "410-357-1025" },
+    ],
+  },
+
+  {
+    component: GiftCertCtaSection,
+    name: "GiftCertCtaSection",
+    inputs: [
+      { name: "eyebrow", type: "string", defaultValue: "Ready to Paddle?" },
+      { name: "title", type: "string", defaultValue: "Want to book a tour for yourself?" },
+      { name: "ctaText", type: "string", defaultValue: "Book a Tour" },
+      { name: "ctaHref", type: "string", defaultValue: "/booking" },
     ],
   },
 ];
