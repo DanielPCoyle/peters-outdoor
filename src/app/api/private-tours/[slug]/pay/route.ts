@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
 import { Resend } from "resend";
+import { SEND_FROM_EMAIL, CONTACT_EMAIL } from "@/lib/email";
 import { emailWrapper, detailCard, detailRow, para, signature } from "@/lib/emailTemplate";
 
 function fmt12h(t: string) {
@@ -108,15 +109,15 @@ export async function PUT(
 
     await Promise.allSettled([
       resend.emails.send({
-        from: "W.H. Peters Outdoor Adventures <noreply@simplerdevelopment.com>",
+        from: SEND_FROM_EMAIL,
         to: tour.clientEmail,
-        replyTo: "info@petersoutdoor.com",
+        replyTo: CONTACT_EMAIL,
         subject: `Your Private Tour is Confirmed — ${tour.title}`,
         html: emailWrapper("Tour Confirmed!", clientBody),
       }),
       resend.emails.send({
-        from: "W.H. Peters Outdoor Adventures <noreply@simplerdevelopment.com>",
-        to: "info@petersoutdoor.com",
+        from: SEND_FROM_EMAIL,
+        to: CONTACT_EMAIL,
         subject: `Private Tour Paid — ${tour.clientName} · ${tour.title}`,
         html: emailWrapper("Private Tour Booked", adminBody),
       }),

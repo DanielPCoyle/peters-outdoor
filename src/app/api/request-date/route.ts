@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { SEND_FROM_EMAIL, CONTACT_EMAIL } from "@/lib/email";
 import { emailWrapper, detailCard, detailRow, para, sectionHeading, signature } from "@/lib/emailTemplate";
 
 export async function POST(req: NextRequest) {
@@ -39,8 +40,8 @@ export async function POST(req: NextRequest) {
   `;
 
   const { error } = await resend.emails.send({
-    from: "W.H. Peters Outdoor Adventures <noreply@simplerdevelopment.com>",
-    to: "info@petersoutdoor.com",
+    from: SEND_FROM_EMAIL,
+    to: CONTACT_EMAIL,
     replyTo: email,
     subject: `Custom Date Request — ${tourName ?? "Tour"}`,
     html: emailWrapper("Custom Date Request", body),

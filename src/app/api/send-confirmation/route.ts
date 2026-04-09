@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { SEND_FROM_EMAIL, CONTACT_EMAIL } from "@/lib/email";
 import {
   emailWrapper, detailCard, detailRow, sectionHeading,
   para, signature, ctaButton, qrCodeBlock, siteUrl,
@@ -95,9 +96,9 @@ export async function POST(req: NextRequest) {
   `;
 
   const { error } = await resend.emails.send({
-    from: "W.H. Peters Outdoor Adventures <noreply@simplerdevelopment.com>",
+    from: SEND_FROM_EMAIL,
     to: email,
-    replyTo: "info@petersoutdoor.com",
+    replyTo: CONTACT_EMAIL,
     subject: `Booking Confirmed — ${tourName}`,
     html: emailWrapper("You're Booked!", body),
   });

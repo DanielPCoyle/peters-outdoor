@@ -4,6 +4,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { SEND_FROM_EMAIL, CONTACT_EMAIL } from "@/lib/email";
 import { getRequestById } from "@/lib/giftCertStore";
 import { emailWrapper, certBadge, para, sectionHeading, signature, siteUrl } from "@/lib/emailTemplate";
 
@@ -35,16 +36,16 @@ export async function POST(req: NextRequest) {
     ${sectionHeading("How to Redeem")}
     <ol style="margin:0 0 24px;padding-left:20px;color:#4a5568;font-size:14px;line-height:2.2;font-family:Arial,sans-serif;">
       <li>Browse tours at <a href="${siteUrl()}/tours" style="color:#2D5016;">${siteUrl()}/tours</a></li>
-      <li>Call <a href="tel:410-357-1025" style="color:#2D5016;">410-357-1025</a> or email <a href="mailto:info@petersoutdoor.com" style="color:#2D5016;">info@petersoutdoor.com</a></li>
+      <li>Call <a href="tel:410-357-1025" style="color:#2D5016;">410-357-1025</a> or email <a href="mailto:${CONTACT_EMAIL}" style="color:#2D5016;">${CONTACT_EMAIL}</a></li>
       <li>Mention certificate code <strong>${record.certificateCode}</strong> when booking</li>
     </ol>
     ${signature}
   `;
 
   await resend.emails.send({
-    from: "W.H. Peters Outdoor Adventures <noreply@simplerdevelopment.com>",
+    from: SEND_FROM_EMAIL,
     to: record.yourEmail,
-    replyTo: "info@petersoutdoor.com",
+    replyTo: CONTACT_EMAIL,
     subject: `Your Gift Certificate (Resent) — ${record.certificateCode}`,
     html: emailWrapper("Gift Certificate", emailBody),
   });

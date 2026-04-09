@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { SEND_FROM_EMAIL, CONTACT_EMAIL } from "@/lib/email";
 import { emailWrapper, detailCard, detailRow, sectionHeading, para } from "@/lib/emailTemplate";
 import { prisma } from "@/lib/prisma";
 
@@ -34,8 +35,8 @@ export async function POST(req: NextRequest) {
   `;
 
   await resend.emails.send({
-    from: "W.H. Peters Outdoor Adventures <noreply@simplerdevelopment.com>",
-    to: "info@petersoutdoor.com",
+    from: SEND_FROM_EMAIL,
+    to: CONTACT_EMAIL,
     subject: `New Newsletter Subscriber — ${email}`,
     html: emailWrapper("New Subscriber", body),
   });
