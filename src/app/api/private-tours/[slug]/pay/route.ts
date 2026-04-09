@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/prisma";
-import { Resend } from "resend";
-import { SEND_FROM_EMAIL, CONTACT_EMAIL } from "@/lib/email";
+import { sendEmail, CONTACT_EMAIL } from "@/lib/email";
 import { emailWrapper, detailCard, detailRow, para, signature } from "@/lib/emailTemplate";
 
 function fmt12h(t: string) {
@@ -75,8 +74,7 @@ export async function PUT(
   });
 
   // Send confirmation emails
-  if (process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.includes("your_api_key")) {
-    const resend = new Resend(process.env.RESEND_API_KEY);
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
     const formattedDate = new Date(tour.date + "T12:00:00").toLocaleDateString("en-US", {
       weekday: "long", year: "numeric", month: "long", day: "numeric",
     });
@@ -108,15 +106,13 @@ export async function PUT(
     `;
 
     await Promise.allSettled([
-      resend.emails.send({
-        from: SEND_FROM_EMAIL,
+      sendEmail({
         to: tour.clientEmail,
         replyTo: CONTACT_EMAIL,
         subject: `Your Private Tour is Confirmed — ${tour.title}`,
         html: emailWrapper("Tour Confirmed!", clientBody),
       }),
-      resend.emails.send({
-        from: SEND_FROM_EMAIL,
+      sendEmail({
         to: CONTACT_EMAIL,
         subject: `Private Tour Paid — ${tour.clientName} · ${tour.title}`,
         html: emailWrapper("Private Tour Booked", adminBody),

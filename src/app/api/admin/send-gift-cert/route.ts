@@ -3,8 +3,7 @@
  * Called from the admin when the buyer reports not receiving the email.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
-import { SEND_FROM_EMAIL, CONTACT_EMAIL } from "@/lib/email";
+import { sendEmail, CONTACT_EMAIL } from "@/lib/email";
 import { getRequestById } from "@/lib/giftCertStore";
 import { emailWrapper, certBadge, para, sectionHeading, signature, siteUrl } from "@/lib/emailTemplate";
 
@@ -18,12 +17,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Certificate is not in active state." }, { status: 400 });
   }
 
-  if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.includes("your_api_key")) {
-    console.log(`Resend not configured — certificate ${record.certificateCode} NOT re-sent`);
-    return NextResponse.json({ success: true, note: "Resend not configured" });
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.log(`Email not configured — certificate ${record.certificateCode} NOT re-sent`);
+    return NextResponse.json({ success: true, note: "Email not configured" });
   }
-
-  const resend = new Resend(process.env.RESEND_API_KEY);
 
   const messageBlock = record.message
     ? `<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;border-left:4px solid #C9A84C;border-radius:0 8px 8px 0;margin-bottom:28px;"><tr><td style="padding:16px 20px;"><p style="margin:0 0 4px;color:#C9A84C;font-size:11px;font-family:Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;">A message for you</p><p style="margin:0;color:#4a5568;font-size:15px;font-style:italic;line-height:1.6;">"${record.message}"</p></td></tr></table>`
@@ -42,8 +39,7 @@ export async function POST(req: NextRequest) {
     ${signature}
   `;
 
-  await resend.emails.send({
-    from: SEND_FROM_EMAIL,
+  await sendEmail({
     to: record.yourEmail,
     replyTo: CONTACT_EMAIL,
     subject: `Your Gift Certificate (Resent) — ${record.certificateCode}`,

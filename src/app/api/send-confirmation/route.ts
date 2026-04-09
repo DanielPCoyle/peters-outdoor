@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
-import { SEND_FROM_EMAIL, CONTACT_EMAIL } from "@/lib/email";
+import { sendEmail, CONTACT_EMAIL } from "@/lib/email";
 import {
   emailWrapper, detailCard, detailRow, sectionHeading,
   para, signature, ctaButton, qrCodeBlock, siteUrl,
@@ -18,11 +17,9 @@ const TOUR_NAMES: Record<string, string> = {
 };
 
 export async function POST(req: NextRequest) {
-  if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.includes("your_api_key")) {
-    return NextResponse.json({ error: "Resend is not configured." }, { status: 503 });
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    return NextResponse.json({ error: "Email is not configured." }, { status: 503 });
   }
-
-  const resend = new Resend(process.env.RESEND_API_KEY);
 
   const { tourId, date, time, guests, name, email, phone, notes, total, addOns, stripePaymentIntentId, location, locationUrl, pfdSizes, emergencyName, emergencyPhone } = await req.json();
 
@@ -95,16 +92,15 @@ export async function POST(req: NextRequest) {
     ${signature}
   `;
 
-  const { error } = await resend.emails.send({
-    from: SEND_FROM_EMAIL,
-    to: email,
-    replyTo: CONTACT_EMAIL,
-    subject: `Booking Confirmed — ${tourName}`,
-    html: emailWrapper("You're Booked!", body),
-  });
-
-  if (error) {
-    console.error("Resend error:", error);
+  try {
+    await sendEmail({
+      to: email,
+      replyTo: CONTACT_EMAIL,
+      subject: `Booking Confirmed — ${tourName}`,
+      html: emailWrapper("You're Booked!", body),
+    });
+  } catch (err) {
+    console.error("Email error:", err);
     return NextResponse.json({ error: "Failed to send confirmation email." }, { status: 500 });
   }
 

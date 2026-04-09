@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
-import { SEND_FROM_EMAIL, CONTACT_EMAIL } from "@/lib/email";
+import { sendEmail, CONTACT_EMAIL } from "@/lib/email";
 import { emailWrapper, detailCard, detailRow, sectionHeading, para } from "@/lib/emailTemplate";
 import { prisma } from "@/lib/prisma";
 
@@ -20,12 +19,10 @@ export async function POST(req: NextRequest) {
     });
   } catch { /* non-fatal */ }
 
-  if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.includes("your_api_key")) {
-    console.log("Newsletter signup (Resend not configured):", email);
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.log("Newsletter signup (email not configured):", email);
     return NextResponse.json({ success: true });
   }
-
-  const resend = new Resend(process.env.RESEND_API_KEY);
 
   const body = `
     ${para("A new visitor has subscribed to the W.H. Peters Outdoor Adventures newsletter.")}
@@ -34,8 +31,7 @@ export async function POST(req: NextRequest) {
     ${para("Add this subscriber to your mailing list and send them upcoming tour announcements, seasonal promotions, and nature guides.")}
   `;
 
-  await resend.emails.send({
-    from: SEND_FROM_EMAIL,
+  await sendEmail({
     to: CONTACT_EMAIL,
     subject: `New Newsletter Subscriber — ${email}`,
     html: emailWrapper("New Subscriber", body),

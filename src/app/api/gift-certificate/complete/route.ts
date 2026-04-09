@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { Resend } from "resend";
-import { SEND_FROM_EMAIL, CONTACT_EMAIL } from "@/lib/email";
+import { sendEmail, CONTACT_EMAIL } from "@/lib/email";
 import { getRequestById, updateRequest, generateCertCode } from "@/lib/giftCertStore";
 import { emailWrapper, certBadge, para, sectionHeading, signature, siteUrl } from "@/lib/emailTemplate";
 
@@ -44,8 +43,7 @@ export async function POST(req: NextRequest) {
   });
 
   // Send the certificate email
-  if (process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.includes("your_api_key")) {
-    const resend = new Resend(process.env.RESEND_API_KEY);
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
 
     const messageBlock = record.message
       ? `<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;border-left:4px solid #C9A84C;border-radius:0 8px 8px 0;margin-bottom:28px;"><tr><td style="padding:16px 20px;"><p style="margin:0 0 4px;color:#C9A84C;font-size:11px;font-family:Arial,sans-serif;letter-spacing:1px;text-transform:uppercase;">A message from ${record.yourName}</p><p style="margin:0;color:#4a5568;font-size:15px;font-style:italic;line-height:1.6;">"${record.message}"</p></td></tr></table>`
@@ -68,8 +66,7 @@ export async function POST(req: NextRequest) {
       ${signature}
     `;
 
-    await resend.emails.send({
-      from: SEND_FROM_EMAIL,
+    await sendEmail({
       to: record.yourEmail,
       replyTo: CONTACT_EMAIL,
       subject: `Your Gift Certificate — ${certCode}`,

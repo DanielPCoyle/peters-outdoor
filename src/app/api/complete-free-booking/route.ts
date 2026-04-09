@@ -3,8 +3,7 @@
  * Atomically marks the cert as redeemed — safe against double-submission.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
-import { SEND_FROM_EMAIL, CONTACT_EMAIL } from "@/lib/email";
+import { sendEmail, CONTACT_EMAIL } from "@/lib/email";
 import { getRequestByCode, atomicRedeem } from "@/lib/giftCertStore";
 import {
   emailWrapper, detailCard, detailRow, sectionHeading,
@@ -30,8 +29,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "This gift certificate has already been redeemed." }, { status: 409 });
   }
 
-  if (process.env.RESEND_API_KEY && !process.env.RESEND_API_KEY.includes("your_api_key")) {
-    const resend = new Resend(process.env.RESEND_API_KEY);
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
 
     const formattedDate = new Date(date).toLocaleDateString("en-US", {
       weekday: "long", year: "numeric", month: "long", day: "numeric",
@@ -77,8 +75,7 @@ export async function POST(req: NextRequest) {
       ${signature}
     `;
 
-    await resend.emails.send({
-      from: SEND_FROM_EMAIL,
+    await sendEmail({
       to: email,
       replyTo: CONTACT_EMAIL,
       subject: `Booking Confirmed — ${tourName}`,
