@@ -236,7 +236,7 @@ export const builderComponents: RegisteredComponent[] = [
       { name: "id", type: "string" },
       { name: "title", type: "string" },
       { name: "tagline", type: "string" },
-      { name: "description", type: "longText", required: true },
+      { name: "description", type: "richText", required: true },
       {
         name: "wildlife",
         type: "list",
