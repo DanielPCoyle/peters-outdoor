@@ -7,6 +7,7 @@ import { Elements } from "@stripe/react-stripe-js";
 import BookingCalendar from "./BookingCalendar";
 import BookingCheckout from "./BookingCheckout";
 import type { Tour, AddOn, TourTimeSlot } from "@/lib/tourStore";
+import RichText from "./RichText";
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
@@ -219,7 +220,7 @@ function TourInfoModal({ tour, onClose }: { tour: Tour; onClose: () => void }) {
           <p className="text-gold font-semibold text-xs uppercase tracking-wider mb-1">{tour.duration}</p>
           <h3 className="font-serif text-2xl font-bold text-forest mb-2">{tour.name}</h3>
           <p className="text-warm-gray text-sm italic mb-3">{tour.tagline}</p>
-          <p className="text-forest/80 text-sm leading-relaxed mb-4">{tour.description}</p>
+          <RichText html={tour.description} className="prose prose-sm max-w-none text-forest/80 text-sm leading-relaxed mb-4" />
           <div>
             <p className="text-xs font-semibold text-forest uppercase tracking-wider mb-2">Wildlife You May See</p>
             <div className="flex flex-wrap gap-2">

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { Tour } from "@/lib/tourStore";
 import MediaPicker from "@/components/admin/MediaPicker";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 
 type TourWithCount = Tour & { addOnCount?: number };
 
@@ -156,7 +157,7 @@ export default function ToursManager() {
             </div>
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
-              <textarea value={createForm.description} onChange={(e) => setField("description", e.target.value)} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest/30 resize-none" />
+              <RichTextEditor value={createForm.description} onChange={(html) => setField("description", html)} minHeight="120px" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Price ($/person) *</label>

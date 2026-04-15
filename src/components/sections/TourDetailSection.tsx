@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Tour } from "@/lib/tourStore";
+import RichText from "../RichText";
 
 type WildlifeItem = string | { animal: string };
 
@@ -118,7 +119,7 @@ export default function TourDetailSection({
         {tagline && (
           <p className="text-sage font-medium text-lg mb-4 italic">{tagline}</p>
         )}
-        <p className="text-warm-gray leading-relaxed mb-6">{description}</p>
+        <RichText html={description ?? ""} className="prose max-w-none text-warm-gray leading-relaxed mb-6" />
 
         {wildlife.length > 0 && (
           <div className="mb-6">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { richTextToPlain } from "./RichText";
 
 interface TourCardProps {
   title: string;
@@ -45,7 +46,7 @@ export default function TourCard({
         </h3>
         <p className="text-sage text-sm font-medium mb-3">{subtitle}</p>
         <p className="text-warm-gray text-sm leading-relaxed mb-5 line-clamp-3">
-          {description}
+          {richTextToPlain(description)}
         </p>
         <div className="flex items-center justify-between">
           <Link

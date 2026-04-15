@@ -6,6 +6,7 @@ import type { Tour } from "@/lib/tourStore";
 import type { AddOn } from "@/lib/addOnStore";
 import TourTimeSlotsPanel from "@/components/admin/TourTimeSlotsPanel";
 import MediaPicker from "@/components/admin/MediaPicker";
+import RichTextEditor from "@/components/admin/RichTextEditor";
 
 // ─── Form helpers ──────────────────────────────────────────────────────────
 
@@ -121,11 +122,10 @@ function DetailsTab({ tour, onSaved }: { tour: Tour; onSaved: (updated: Tour) =>
         </div>
         <div className="sm:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
-          <textarea
+          <RichTextEditor
             value={form.description}
-            onChange={(e) => set("description", e.target.value)}
-            rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-forest/30 resize-none"
+            onChange={(html) => set("description", html)}
+            minHeight="160px"
           />
         </div>
         <div>
