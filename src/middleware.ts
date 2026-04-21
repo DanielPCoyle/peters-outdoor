@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const COOKIE_NAME = "admin_session";
+const PITCH_PASSWORD = "Paul2026";
+
+function checkBasicAuth(req: NextRequest, password: string): boolean {
+  const header = req.headers.get("authorization");
+  if (!header?.startsWith("Basic ")) return false;
+  try {
+    const decoded = atob(header.slice(6));
+    const supplied = decoded.includes(":") ? decoded.split(":").slice(1).join(":") : decoded;
+    return supplied === password;
+  } catch {
+    return false;
+  }
+}
+
+function basicAuthChallenge(realm: string): NextResponse {
+  return new NextResponse("Authentication required", {
+    status: 401,
+    headers: {
+      "WWW-Authenticate": `Basic realm="${realm}", charset="UTF-8"`,
+    },
+  });
+}
 
 async function computeToken(password: string, secret: string): Promise<string> {
   const enc = new TextEncoder();
@@ -30,6 +52,13 @@ async function isValidToken(token: string | undefined): Promise<boolean> {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  if (pathname === "/pitch" || pathname.startsWith("/pitch/")) {
+    if (!checkBasicAuth(req, PITCH_PASSWORD)) {
+      return basicAuthChallenge("Peters Outdoor Pitch");
+    }
+    return NextResponse.next();
+  }
+
   const isAdminPage = pathname.startsWith("/admin");
   const isAdminApi = pathname.startsWith("/api/admin");
 
@@ -56,5 +85,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*"],
+  matcher: ["/admin/:path*", "/api/admin/:path*", "/pitch", "/pitch/:path*"],
 };
